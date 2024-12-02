@@ -399,7 +399,7 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
         {
             if (tab == 1)
             {
-                combatEngine->addStrategies("tank feral", "tank assist", "pull", "pull back", "close", "behind", NULL);
+                combatEngine->addStrategies("dps feral", "dps assist", "pull", "pull back", "close", "behind", NULL);
             }
             else if (tab == 2)
             {
@@ -778,7 +778,7 @@ void AiFactory::AddDefaultNonCombatStrategies(Player* player, PlayerbotAI* const
         {
             if (tab == 1)
             {
-                nonCombatEngine->addStrategies("tank feral", "tank assist", NULL);
+                nonCombatEngine->addStrategies("dps feral", "dps assist", NULL);
             }
             else if (tab == 2)
             {
