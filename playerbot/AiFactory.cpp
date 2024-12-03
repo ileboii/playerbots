@@ -1161,7 +1161,7 @@ void AiFactory::AddDefaultDeadStrategies(Player* player, PlayerbotAI* const faca
         {
             if (tab == 1)
             {
-                deadEngine->addStrategy("tank feral");
+                deadEngine->addStrategy("dps feral");
             }
             else if (tab == 2)
             {
@@ -1348,7 +1348,7 @@ void AiFactory::AddDefaultReactionStrategies(Player* player, PlayerbotAI* const 
         {
             if (tab == 1)
             {
-                reactionEngine->addStrategy("tank feral");
+                reactionEngine->addStrategy("dps feral");
             }
             else if (tab == 2)
             {

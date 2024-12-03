@@ -45,12 +45,21 @@ namespace ai
                 pSpellInfo->SchoolMask == 1;
 #endif
 
-            bool hasCost = pSpellInfo->manaCost > 0;
 
-            return hasCost && !isTradeSkill && (GetSpellRecoveryTime(pSpellInfo) < MINUTE * IN_MILLISECONDS || !ai->HasActivePlayerMaster());
+//            bool hasCost = pSpellInfo->manaCost > 0;
+
+            return !isTradeSkill && (GetSpellRecoveryTime(pSpellInfo) < MINUTE * IN_MILLISECONDS || !ai->HasActivePlayerMaster() || pSpellInfo->Id == 818);
         }
 
-        virtual uint32 GetSpellPriority(const SpellEntry* pSpellInfo) { return 1; }
+        virtual uint32 GetSpellPriority(const SpellEntry* pSpellInfo)
+        {
+            if (pSpellInfo->Id == 818)
+            {
+                return 100;
+            }
+            else return 1;
+        }
+
         virtual bool Execute(Event& event) override;
 
         virtual bool castSpell(uint32 spellId, WorldObject* wo, Player* requester);

@@ -424,6 +424,9 @@ bool RpgHomeBindTrigger::IsActive()
     if (AI_VALUE(WorldPosition, "home bind").distance(bot) < 500.0f)
         return false;
 
+    if (ai->IsRealPlayer() || sRandomPlayerbotMgr.IsFreeBot(ai->GetBot()))
+        return false;
+
     return true;
 }
 
