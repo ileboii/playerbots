@@ -304,15 +304,15 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
         {
             if (tab == 0)
             {
-                combatEngine->addStrategy("discipline");
+                combatEngine->addStrategies("discipline", "offheal", NULL);
             }
             else if (tab == 1)
             {
-                combatEngine->addStrategy("holy");
+                combatEngine->addStrategies("holy", "offdps", NULL);
             }
             else
             {
-                combatEngine->addStrategy("shadow");
+                combatEngine->addStrategies("shadow", "offheal", NULL);
             }
 
             combatEngine->addStrategies("dps assist", "flee", "cure", "ranged", "cc", "buff", "aoe", "boost", NULL);
@@ -342,15 +342,15 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
         {
             if (tab == 2)
             {
-                combatEngine->addStrategies("protection", "tank assist", "pull", "pull back", "mark rti", NULL);
+                combatEngine->addStrategies("protection", "tank assist", "pull", "close", "pull back", NULL);
             }
             else if (player->GetLevel() < 30 || tab == 0)
             {
-                combatEngine->addStrategies("arms", "dps assist", "behind", NULL);
+                combatEngine->addStrategies("arms", "dps assist", "close", "behind", NULL);
             }
             else
             {
-                combatEngine->addStrategies("fury", "dps assist", "behind", NULL);
+                combatEngine->addStrategies("fury", "dps assist", "close", "behind", NULL);
             }
 
             combatEngine->addStrategies("aoe", "cc", "buff", "boost", NULL);
@@ -369,7 +369,7 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
             }
             else
             {
-                combatEngine->addStrategies("enhancement", "aoe", "cc", "close", NULL);
+                combatEngine->addStrategies("enhancement", "aoe", "cc", "close", "behind", NULL);
             }
 
             combatEngine->addStrategies("dps assist", "cure", "totems", "buff", "boost", NULL);
@@ -384,11 +384,11 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
 			}
             else if(tab == 0)
             {
-                combatEngine->addStrategies("holy", "dps assist", "flee", "ranged", NULL);
+                combatEngine->addStrategies("holy", "dps assist", "close", "offdps", "behind", NULL);
             }
             else
             {
-                combatEngine->addStrategies("retribution", "dps assist", "close", NULL);
+                combatEngine->addStrategies("retribution", "dps assist", "close", "offheal", "behind", NULL);
             }
 
             combatEngine->addStrategies("cure", "aoe", "cc", "buff", "boost", "aura", "blessing", NULL);
