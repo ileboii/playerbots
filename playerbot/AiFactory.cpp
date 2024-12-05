@@ -361,15 +361,15 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
         {
             if (tab == 0)
             {
-                combatEngine->addStrategies("elemental", "aoe", "cc", "flee", "ranged", NULL);
+                combatEngine->addStrategies("elemental", "aoe", "cc", "flee", "ranged", "offheal", NULL);
             }
             else if (tab == 2)
             {
-                combatEngine->addStrategies("restoration", "flee", "ranged", NULL);
+                combatEngine->addStrategies("restoration", "flee", "ranged", "offdps", NULL);
             }
             else
             {
-                combatEngine->addStrategies("enhancement", "aoe", "cc", "close", "behind", NULL);
+                combatEngine->addStrategies("enhancement", "aoe", "cc", "close", "behind", "offheal", NULL);
             }
 
             combatEngine->addStrategies("dps assist", "cure", "totems", "buff", "boost", NULL);
@@ -399,15 +399,15 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
         {
             if (tab == 1)
             {
-                combatEngine->addStrategies("dps feral", "dps assist", "pull", "pull back", "close", "behind", NULL);
+                combatEngine->addStrategies("dps feral", "dps assist", "pull", "pull back", "close", "behind", "offheal" NULL);
             }
             else if (tab == 2)
             {
-                combatEngine->addStrategies("restoration", "dps assist", "flee", "ranged", NULL);
+                combatEngine->addStrategies("restoration", "dps assist", "flee", "ranged", "offdps" NULL);
             }
             else
             {
-                combatEngine->addStrategies("balance", "dps assist", "flee", "ranged", NULL);
+                combatEngine->addStrategies("balance", "dps assist", "flee", "ranged", "offheal" NULL);
             }
 
             combatEngine->addStrategies("cure", "aoe", "cc", "buff", "boost", NULL);
