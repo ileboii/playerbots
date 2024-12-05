@@ -399,15 +399,15 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
         {
             if (tab == 1)
             {
-                combatEngine->addStrategies("dps feral", "dps assist", "pull", "pull back", "close", "behind", "offheal" NULL);
+                combatEngine->addStrategies("dps feral", "dps assist", "pull", "pull back", "close", "behind", "offheal", NULL);
             }
             else if (tab == 2)
             {
-                combatEngine->addStrategies("restoration", "dps assist", "flee", "ranged", "offdps" NULL);
+                combatEngine->addStrategies("restoration", "dps assist", "flee", "ranged", "offdps", NULL);
             }
             else
             {
-                combatEngine->addStrategies("balance", "dps assist", "flee", "ranged", "offheal" NULL);
+                combatEngine->addStrategies("balance", "dps assist", "flee", "ranged", "offheal", NULL);
             }
 
             combatEngine->addStrategies("cure", "aoe", "cc", "buff", "boost", NULL);
