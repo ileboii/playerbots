@@ -158,7 +158,6 @@ target_link_libraries(${LIBRARY_NAME}
   PRIVATE shared
   PRIVATE Detour
   PRIVATE g3dlite
-  PRIVATE zlib
 )
 
 target_include_directories(${LIBRARY_NAME}
