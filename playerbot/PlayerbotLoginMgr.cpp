@@ -31,7 +31,7 @@ public:
     PlayerbotHolder* GetPlayerbotHolder() { return playerbotHolder; }
 };
 
-PlayerBotInfo::PlayerBotInfo(const uint32 account, const uint32 guid, const uint8 race, const uint8 cls, const uint32 level, const bool isNew, const WorldPosition& position) : account(account), guid(guid), race(race), cls(cls), level(level), isNew(isNew), position(position)
+PlayerBotInfo::PlayerBotInfo(const uint32 account, const uint32 guid, const uint8 race, const uint8 cls, const uint32 level, const bool isNew, const WorldPosition& position, const uint32 guildId) : account(account), guid(guid), race(race), cls(cls), level(level), isNew(isNew), position(position), guildId(guildId)
 {
 
     holder = new PlayerbotLoginQueryHolder(&sRandomPlayerbotMgr, 0, account, guid);
@@ -44,6 +44,8 @@ PlayerBotInfo::PlayerBotInfo(const uint32 account, const uint32 guid, const uint
         return;
     }    
 }
+
+PlayerBotInfo::PlayerBotInfo(Player* player) : PlayerBotInfo(player->GetSession()->GetAccountId(), player->GetDbGuid(), player->getRace(), player->getClass(), player->GetLevel(), player->GetTotalPlayedTime() == 0, player, player->GetGuildId()) {};
 
 uint32 PlayerBotInfo::GetLevel() const
 {
@@ -59,23 +61,58 @@ uint32 PlayerBotInfo::GetLevel() const
     return (minRandomLevel + maxRandomLevel) / 2;
 }
 
-bool PlayerBotInfo::IsFarFromPlayer(const LoginSpace& space) const
+bool PlayerBotInfo::IsNearPlayer(const LoginSpace& space) const
 {
-    if (space.playerLocations.empty())
+    if (space.realPlayerInfos.empty())
         return false;
 
     if (isNew && sPlayerbotAIConfig.instantRandomize) //We do not know where the bot will be teleported to on randomisation. 
-        return false;
+        return true;
 
-    for (auto& p : space.playerLocations)
+    for (auto& player : space.realPlayerInfos)
     {
+        WorldPosition p(player.position);
         if (p.mapid == position.mapid && p.sqDistance(position) < sPlayerbotAIConfig.loginBotsNearPlayerRange * sPlayerbotAIConfig.loginBotsNearPlayerRange)
         {
-            return false;
+            return true;
         }
     }
 
-    return true;
+    return false;
+}
+
+bool PlayerBotInfo::IsOnPlayerMap(const LoginSpace& space) const
+{
+    if (space.realPlayerInfos.empty())
+        return false;
+
+    for (auto& player : space.realPlayerInfos)
+    {
+        WorldPosition p(player.position);
+        if (p.mapid == position.mapid)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
+bool PlayerBotInfo::IsInPlayerGuild(const LoginSpace& space) const
+{
+    if (space.realPlayerInfos.empty())
+        return false;
+
+    for (auto& player : space.realPlayerInfos)
+    {
+        if (player.guildId == guildId)
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 bool PlayerBotInfo::SendHolder()
@@ -90,6 +127,9 @@ bool PlayerBotInfo::SendHolder()
         return false;
 
     if (loginState == LoginState::BOT_ON_LOGOUTQUEUE)
+        return false;
+
+    if (loginState == LoginState::BOT_OFFLINE)
         return false;
 
     sRandomPlayerbotMgr.GetValue(guid, "logout");
@@ -325,7 +365,7 @@ void PlayerBotLoginMgr::LoadBotsFromDb()
 
     sLog.outDebug("PlayerbotLoginMgr: %d accounts found.", uint32(accounts.size()));
 
-    result = CharacterDatabase.PQuery("SELECT account, guid, race, class, level, totaltime, map, position_x, position_y, position_z, orientation FROM characters");
+    result = CharacterDatabase.PQuery("SELECT account, guid, race, class, level, totaltime, map, position_x, position_y, position_z, orientation, (SELECT guildid FROM guild_member m WHERE m.guid = c.guid) guildId FROM characters c");
          
     do
     {
@@ -341,7 +381,8 @@ void PlayerBotLoginMgr::LoadBotsFromDb()
         uint32 level = fields[4].GetUInt32();
         bool isNew = sPlayerbotAIConfig.instantRandomize ? (fields[5].GetUInt32() == 0) : level == 1;
         WorldPosition position(fields[6].GetFloat(), fields[7].GetFloat(), fields[8].GetFloat(), fields[9].GetFloat(), fields[10].GetFloat());
-        botPool.insert(std::make_pair(guid, PlayerBotInfo(account, guid, race, cls, level, isNew, position)));;
+        uint32 guildId = fields[11].GetUInt32();
+        botPool.insert(std::make_pair(guid, PlayerBotInfo(account, guid, race, cls, level, isNew, position, guildId)));;
     } while (result->NextRow());
 
     sLog.outDebug("PlayerbotLoginMgr: %d bots found.", uint32(botPool.size()));
@@ -389,12 +430,12 @@ void PlayerBotLoginMgr::Update()
 
 void PlayerBotLoginMgr::SetPlayerLocations(std::map<uint32, Player*> players)
 {
-    std::vector<WorldPosition> positions;
+    std::vector<PlayerBotInfo> realPlayers;
     for (auto& [guid, player] : players)
-        positions.push_back(player);
+        realPlayers.push_back(player);
 
     playerMutex.lock();
-    playerLocations = positions;
+    realPlayerInfos = realPlayers;
     playerMutex.unlock();
 }
 
@@ -493,10 +534,8 @@ LoginCriteria PlayerBotLoginMgr::GetLoginCriteria(const uint8 attempt) const
     
     ADD_CRITERIA(MAX_BOTS, space.totalSpace <= int(0));
 
-    if(attempt == 0)
-        ADD_CRITERIA(LOGOUT_NOK, info.GetLoginState() == LoginState::BOT_ONLINE && space.currentSpace > (int32)sPlayerbotAIConfig.freeRoomForNonSpareBots);
-    else
-        ADD_CRITERIA(SPARE_ROOM, info.GetLoginState() == LoginState::BOT_OFFLINE && space.totalSpace <= (int32)sPlayerbotAIConfig.freeRoomForNonSpareBots);
+    if (attempt > 0)
+       ADD_CRITERIA(SPARE_ROOM, info.GetLoginState() == LoginState::BOT_OFFLINE && space.totalSpace <= (int32)sPlayerbotAIConfig.freeRoomForNonSpareBots);
 
     if (sPlayerbotAIConfig.randomBotTimedLogout)
         ADD_CRITERIA(RANDOM_TIMED_LOGOUT, info.GetLoginState() == LoginState::BOT_ONLINE && !sRandomPlayerbotMgr.GetValue(info.GetId(), "add"));
@@ -506,14 +545,19 @@ LoginCriteria PlayerBotLoginMgr::GetLoginCriteria(const uint8 attempt) const
 
     std::vector<std::string> configCriteria = sPlayerbotAIConfig.loginCriteria;
 
+    if(configCriteria.size() >= attempt)
     for (uint8 i = 0; i < std::min(uint8(configCriteria.size() - attempt), uint8(configCriteria.size())); i++)
     {
         if (configCriteria[i] == "classrace")
             ADD_CRITERIA(CLASSRACE, space.classRaceBucket[info.GetClass()][info.GetRace()] <= 0);
         if (configCriteria[i] == "level")
-            ADD_CRITERIA(LEVEL, space.classRaceBucket[info.GetLevel()] <= 0);
+            ADD_CRITERIA(LEVEL, space.levelBucket[info.GetLevel()] <= 0);
         if (configCriteria[i] == "range")
-            ADD_CRITERIA(RANGE, info.IsFarFromPlayer(space));
+            ADD_CRITERIA(RANGE, !info.IsNearPlayer(space));
+        if (configCriteria[i] == "map")
+            ADD_CRITERIA(MAP, !info.IsOnPlayerMap(space));
+        if (configCriteria[i] == "guild")
+            ADD_CRITERIA(GUILD, !info.IsInPlayerGuild(space));
     }
 
     return criteria;
@@ -524,7 +568,7 @@ void PlayerBotLoginMgr::FillLoginSpace(LoginSpace& space, FillStep step)
     space.totalSpace = GetMaxOnlineBotCount();
     space.currentSpace = GetMaxOnlineBotCount();
     playerMutex.lock();
-    space.playerLocations = playerLocations;
+    space.realPlayerInfos = realPlayerInfos;
     playerMutex.unlock();
 
     for (uint32 level = 1; level <= GetMaxLevel(); ++level)
@@ -546,26 +590,48 @@ void PlayerBotLoginMgr::FillLoginSpace(LoginSpace& space, FillStep step)
     }   
 }
 
+bool PlayerBotLoginMgr::CriteriaStillValid(const LoginCriterionFailType oldFailType, const LoginCriteria& criteria) const
+{
+    switch (oldFailType) //These depends on previous bots accepted/rejected so need to be recalculated.
+    {
+    case LoginCriterionFailType::UNKNOWN:
+    case LoginCriterionFailType::MAX_BOTS:
+    case LoginCriterionFailType::SPARE_ROOM:
+    case LoginCriterionFailType::CLASSRACE:
+    case LoginCriterionFailType::LEVEL:
+        return false;
+    };
+
+    for (auto& [criterionfail, criterion] : criteria)
+        if (criterionfail == oldFailType)
+            return true;
+
+    return false;
+}
+
 void PlayerBotLoginMgr::FillLoginLogoutQueue()
 {
     LoginSpace loginSpace;
     FillLoginSpace(loginSpace, FillStep::NEXT_STEP);
 
-    std::unordered_map<uint8, std::unordered_map<LoginCriterionFailType, uint32>> loginFails;
+    std::unordered_map<uint32, LoginCriterionFailType> loginFails;
 
     std::vector<PlayerBotInfo*> logins, logouts;
 
-    for (uint8 attempt = 0; attempt < sPlayerbotAIConfig.loginCriteria.size(); attempt++)
+    for (uint8 attempt = 0; attempt <= sPlayerbotAIConfig.loginCriteria.size(); attempt++)
     {
         LoginCriteria criteria = GetLoginCriteria(attempt);
 
         for (auto& [guid, botInfo] : botPool)
         {
+            if (CriteriaStillValid(loginFails[guid], criteria))
+                continue;
+
             botInfo.EmptyLoginSpace(loginSpace, FillStep::NEXT_STEP); //Pretend the bot isn't logged in for a moment.
-            LoginCriterionFailType LoginFail = botInfo.MatchNoCriteria(loginSpace, criteria);
+            loginFails[guid] = botInfo.MatchNoCriteria(loginSpace, criteria);
             botInfo.FillLoginSpace(loginSpace, FillStep::NEXT_STEP);
 
-            bool wantedOnline = (LoginFail == LoginCriterionFailType::LOGIN_OK || LoginFail == LoginCriterionFailType::LOGOUT_NOK);
+            bool wantedOnline = (loginFails[guid] == LoginCriterionFailType::LOGIN_OK);
 
             if (wantedOnline)
             {
@@ -580,11 +646,11 @@ void PlayerBotLoginMgr::FillLoginLogoutQueue()
                         logouts.push_back(&botInfo);
             }
 
-            loginFails[attempt][LoginFail]++;
-
             if (attempt > 0 && loginSpace.totalSpace < (int32)sPlayerbotAIConfig.freeRoomForNonSpareBots)
                 loginSpace.totalSpace = 0;
         }
+
+        sLog.outDebug("PlayerbotLoginMgr: Attempt %d, space left %d", attempt, loginSpace.totalSpace);
 
         if (loginSpace.totalSpace <= 0)
             break;
@@ -597,14 +663,6 @@ void PlayerBotLoginMgr::FillLoginLogoutQueue()
 
     for (auto& login : logins)
         loginQueue.push(login);
-
-    for (auto& [attempt, fails] : loginFails)
-    {
-        for (auto& [fail, nr] : fails)
-        {
-            sLog.outDebug("PlayerbotLoginMgr attempt: %d fail %s: %d", attempt, failName.find(fail)->second.c_str(), nr);
-        }
-    }
 
     sLog.outDebug("PlayerbotLoginMgr: Queued to log in: %d, out: %d", uint32(loginQueue.size()), uint32(logoutQueue.size()));
 }

@@ -1,12 +1,14 @@
 #include "WorldPosition.h"
 
+class PlayerBotInfo;
+
 struct LoginSpace
 {
 	int32 currentSpace;
 	int32 totalSpace;
 	int32 classRaceBucket[MAX_CLASSES][MAX_RACES];
 	int32 levelBucket[DEFAULT_MAX_LEVEL + 1];
-	std::vector<WorldPosition> playerLocations;
+	std::vector<PlayerBotInfo> realPlayerInfos;
 };
 
 enum class HolderState : uint8
@@ -33,43 +35,49 @@ enum class FillStep : uint8
 
 enum class LoginCriterionFailType : uint8
 {
-	LOGIN_OK = 0,
-	LOGOUT_NOK = 1,
+	UNKNOWN = 0,
 	MAX_BOTS = 2,
 	SPARE_ROOM = 3,
 	RANDOM_TIMED_LOGOUT = 4,
 	RANDOM_TIMED_OFFLINE = 5,
 	CLASSRACE = 6,
 	LEVEL = 7,
-	RANGE = 8
+	RANGE = 8,
+	MAP = 9,
+	GUILD = 10,
+	LOGIN_OK = 11
 };
 
-static const std::unordered_map<LoginCriterionFailType, std::string> failName = {
- 	 {LoginCriterionFailType::LOGIN_OK, "LOGIN_OK"}
-	,{LoginCriterionFailType::LOGOUT_NOK, "LOGOUT_NOK" }
+static const std::unordered_map<LoginCriterionFailType, std::string> failName = {	
+ 	 {LoginCriterionFailType::UNKNOWN, "UNKNOWN"}
     ,{LoginCriterionFailType::MAX_BOTS, "MAX_BOTS"}
 	,{LoginCriterionFailType::SPARE_ROOM, "SPARE_ROOM"}
 	,{LoginCriterionFailType::RANDOM_TIMED_LOGOUT, "RANDOM_TIMED_LOGOUT"}
 	,{LoginCriterionFailType::RANDOM_TIMED_OFFLINE , "RANDOM_TIMED_OFFLINE"}
 	,{LoginCriterionFailType::CLASSRACE, "CLASSRACE"}
 	,{LoginCriterionFailType::LEVEL, "LEVEL"}
-	,{LoginCriterionFailType::RANGE , "RANGE"} };
-
-class PlayerBotInfo;
+	,{LoginCriterionFailType::RANGE , "RANGE"} 
+	,{LoginCriterionFailType::MAP , "MAP"}
+	,{LoginCriterionFailType::GUILD , "GUILD"}
+    ,{LoginCriterionFailType::LOGIN_OK, "LOGIN_OK"} };
 
 typedef std::vector <std::pair<LoginCriterionFailType, std::function<bool(const PlayerBotInfo&, const LoginSpace&)>>> LoginCriteria;
 
 class PlayerBotInfo
 {
 public:
-	PlayerBotInfo(const uint32 account, const uint32 guid, const uint8 race, const uint8 cls, const uint32 level, const bool isNew, const WorldPosition& position);
+	PlayerBotInfo(const uint32 account, const uint32 guid, const uint8 race, const uint8 cls, const uint32 level, const bool isNew, const WorldPosition& position, const uint32 guildId);
+
+	PlayerBotInfo(Player* player);
 
 	ObjectGuid GetGuid() const { return ObjectGuid(HIGHGUID_PLAYER, guid); }
 	uint32 GetId() const { return guid; }
 	uint8 GetRace() const { return race; }
 	uint8 GetClass() const { return cls; }
 	uint32 GetLevel() const;
-	bool IsFarFromPlayer(const LoginSpace& space) const;
+	bool IsNearPlayer(const LoginSpace& space) const;
+	bool IsOnPlayerMap(const LoginSpace& space) const;
+	bool IsInPlayerGuild(const LoginSpace& space) const;
 	LoginState GetLoginState() const { return loginState; }
 
 	bool SendHolder();
@@ -97,6 +105,7 @@ private:
 	uint32 level;
 	bool isNew = false;
 	WorldPosition position;
+	uint32 guildId;
 
 	SqlQueryHolder* holder;
 	HolderState holderState = HolderState::HOLDER_EMPTY;
@@ -126,6 +135,7 @@ private:
 
 	LoginCriteria GetLoginCriteria(const uint8 attempt) const;
 	void FillLoginSpace(LoginSpace& space, FillStep step);
+	bool CriteriaStillValid(const LoginCriterionFailType oldFailType, const LoginCriteria& criteria) const;
 	uint32 GetMaxOnlineBotCount() const;
 	uint32 GetMaxLevel() const;
 	uint32 GetClassRaceBucketSize(uint8 cls, uint8 race) const;
@@ -136,7 +146,7 @@ private:
 	bool showSpace = false;
 
 	std::mutex playerMutex;
-	std::vector<WorldPosition> playerLocations;
+	std::vector<PlayerBotInfo> realPlayerInfos;
 
 	std::mutex loginMutex;
 	std::queue<PlayerBotInfo*> loginQueue;
