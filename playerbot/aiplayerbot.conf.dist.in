@@ -692,6 +692,8 @@ AiPlayerbot.PremadeSpecLink.11.9.60 = 0143503002551351--5005021
 # Darkmoon Faire Elwynn 			Sayge's Dark Fortune of Damage
 AiPlayerbot.WorldBuff.0.0.0.0.0.4 = 23768
 
+# Darkmoon Faire - Elwynn Forest	Sayge's Dark Fortune of Damage
+# AiPlayerbot.WorldBuff.0.0.0.0.0.4 = 23768
 
 # Prefix for bot chat commands (e.g. follow, stay)
 #AiPlayerbot.CommandPrefix =
