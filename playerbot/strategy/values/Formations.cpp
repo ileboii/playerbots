@@ -517,7 +517,7 @@ float Formation::GetFollowAngle()
     return start + (0.125f + 1.75f * index / total + (total == 2 ? 0.125f : 0.0f)) * M_PI;
 }
 
-FormationValue::FormationValue(PlayerbotAI* ai) : ManualSetValue<Formation*>(ai, new NearFormation(ai), "formation")
+FormationValue::FormationValue(PlayerbotAI* ai) : ManualSetValue<Formation*>(ai, new ChaosFormation(ai), "formation")
 {
 }
 
@@ -544,7 +544,7 @@ bool FormationValue::Load(std::string formation)
         if (value) delete value;
         value = new QueueFormation(ai);
     }
-    else if (formation == "chaos")
+    else if (formation == "chaos" || formation == "default")
     {
         if (value) delete value;
         value = new ChaosFormation(ai);
@@ -569,7 +569,7 @@ bool FormationValue::Load(std::string formation)
         if (value) delete value;
         value = new ArrowFormation(ai);
     }
-    else if (formation == "near" || formation == "default")
+    else if (formation == "near")
     {
         if (value) delete value;
         value = new NearFormation(ai);
