@@ -5828,7 +5828,6 @@ bool PlayerbotAI::AllowActive(ActivityType activityType)
         case ActivePiorityType::IN_ACTIVE_MAP:
         case ActivePiorityType::IN_INACTIVE_MAP:
         default:
-            return false;
             break;
         }
     }
