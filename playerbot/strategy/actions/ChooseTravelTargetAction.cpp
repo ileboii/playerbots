@@ -578,8 +578,7 @@ std::vector<WorldPosition*> ChooseTravelTargetAction::getLogicalPoints(Player* r
     auto pmo = sPerformanceMonitor.start(PERF_MON_VALUE, "getLogicalPoints", &context->performanceStack);
     std::vector<WorldPosition*> retvec;
 
-//    static std::vector<float> distanceLimits = { sPlayerbotAIConfig.sightDistance, 4 * sPlayerbotAIConfig.sightDistance, 10 * sPlayerbotAIConfig.sightDistance, 20 * sPlayerbotAIConfig.sightDistance, 50 * sPlayerbotAIConfig.sightDistance, 100 * sPlayerbotAIConfig.sightDistance, 10000 * sPlayerbotAIConfig.sightDistance };
-    static std::vector<float> distanceLimits = { sPlayerbotAIConfig.sightDistance, 10 * sPlayerbotAIConfig.sightDistance, 20 * sPlayerbotAIConfig.sightDistance, 50 * sPlayerbotAIConfig.sightDistance, 100 * sPlayerbotAIConfig.sightDistance, 5000 * sPlayerbotAIConfig.sightDistance, 100000 * sPlayerbotAIConfig.sightDistance };
+    static std::vector<float> distanceLimits = { sPlayerbotAIConfig.sightDistance, 4 * sPlayerbotAIConfig.sightDistance, 10 * sPlayerbotAIConfig.sightDistance, 20 * sPlayerbotAIConfig.sightDistance, 50 * sPlayerbotAIConfig.sightDistance, 100 * sPlayerbotAIConfig.sightDistance, 10000 * sPlayerbotAIConfig.sightDistance };
 
     std::vector<std::vector<WorldPosition*>> partitions;
 
