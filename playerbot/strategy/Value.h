@@ -392,12 +392,10 @@ namespace ai
     {
     public:
         StringManualSetSavedValue(PlayerbotAI* ai, std::string defaultValue = "", std::string name = "manual saved string") : ManualSetValue<std::string>(ai, defaultValue, name), Qualified() {};
-
         virtual std::string Format()
         {
             return this->value;
         }
-
         virtual std::string Save() { return value; }
         virtual bool Load(std::string text) { value = text; return true; }
     };
