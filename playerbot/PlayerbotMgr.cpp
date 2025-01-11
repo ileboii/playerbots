@@ -788,6 +788,7 @@ std::list<std::string> PlayerbotHolder::HandlePlayerbotCommand(char const* args,
             messages.push_back("You do not have permission to enable player ai");
             return messages;
         }
+
         else if (sPlayerbotAIConfig.selfBotLevel == BotSelfBotLevel::ALWAYS_ALLOWED && master->GetSession()->GetSecurity() < SEC_GAMEMASTER)
         {
             messages.push_back("Player ai is only available while online");
