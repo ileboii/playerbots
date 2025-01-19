@@ -1044,7 +1044,7 @@ public:
     {
         // Disable Berserker Stance
         const std::string& actionName = action->getName();
-        if (((actionName == "berserker stance" ||
+        if ((actionName == "berserker stance" ||
             actionName == "whirlwind" ||
             actionName == "mortal strike" ||
             actionName == "heroic strike" ||
@@ -1052,14 +1052,16 @@ public:
             AI_VALUE2(bool, "trigger active", "melee light aoe") &&
             bot->HasSpell(12292) &&
             bot->IsSpellReady(12292) &&
-            !bot->HasAura(12292)) ||
+            !bot->HasAura(12292))
+        {
+            return 0.0f;
+        }
 
-            // Disable Battle Stance spam if SS is on CD
-            ((actionName == "battle stance") &&
-                AI_VALUE2(bool, "trigger active", "melee light aoe") &&
-                bot->HasSpell(12292) &&
-                !bot->IsSpellReady(12292)))
-
+        // Disable Battle Stance spam if SS is on CD
+        if ((actionName == "battle stance") &&
+            AI_VALUE2(bool, "trigger active", "melee light aoe") &&
+            bot->HasSpell(12292) &&
+            !bot->IsSpellReady(12292))
         {
             return 0.0f;
         }
@@ -1077,7 +1079,7 @@ public:
     {
         // Disable Berserker Stance
         const std::string& actionName = action->getName();
-        if (((actionName == "berserker stance" ||
+        if ((actionName == "berserker stance" ||
             actionName == "whirlwind" ||
             actionName == "mortal strike" ||
             actionName == "heroic strike" ||
@@ -1085,14 +1087,16 @@ public:
             AI_VALUE2(bool, "trigger active", "melee light aoe") &&
             bot->HasSpell(12292) &&
             bot->IsSpellReady(12292) &&
-            !bot->HasAura(12292)) ||
+            !bot->HasAura(12292))
+        {
+            return 0.0f;
+        }
 
-            // Disable Battle Stance spam if SS is on CD
-            ((actionName == "battle stance") &&
-            AI_VALUE2(bool, "trigger active", "melee light aoe")&&
+        // Disable Battle Stance spam if SS is on CD
+        if ((actionName == "battle stance") &&
+            AI_VALUE2(bool, "trigger active", "melee light aoe") &&
             bot->HasSpell(12292) &&
-            !bot->IsSpellReady(12292)))
-
+            !bot->IsSpellReady(12292))
         {
             return 0.0f;
         }
@@ -1110,7 +1114,7 @@ public:
     {
         // Disable Berserker Stance
         const std::string& actionName = action->getName();
-        if (((actionName == "berserker stance" ||
+        if ((actionName == "berserker stance" ||
             actionName == "whirlwind" ||
             actionName == "mortal strike" ||
             actionName == "heroic strike" ||
@@ -1118,14 +1122,16 @@ public:
             AI_VALUE2(bool, "trigger active", "melee light aoe") &&
             bot->HasSpell(12292) &&
             bot->IsSpellReady(12292) &&
-            !bot->HasAura(12292)) ||
+            !bot->HasAura(12292))
+        {
+            return 0.0f;
+        }
 
-            // Disable Battle Stance spam if SS is on CD
-            ((actionName == "battle stance") &&
-                AI_VALUE2(bool, "trigger active", "melee light aoe") &&
-                bot->HasSpell(12292) &&
-                !bot->IsSpellReady(12292)))
-
+        // Disable Battle Stance spam if SS is on CD
+        if ((actionName == "battle stance") &&
+            AI_VALUE2(bool, "trigger active", "melee light aoe") &&
+            bot->HasSpell(12292) &&
+            !bot->IsSpellReady(12292))
         {
             return 0.0f;
         }
