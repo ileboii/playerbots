@@ -1046,6 +1046,8 @@ public:
         const std::string& actionName = action->getName();
         if ((actionName == "berserker stance" ||
             actionName == "whirlwind" ||
+            actionName == "mortal strike" ||
+            actionName == "heroic strike" ||
             actionName == "cleave") &&
             AI_VALUE2(bool, "trigger active", "melee light aoe") &&
             bot->HasSpell(12292) &&
@@ -1070,6 +1072,8 @@ public:
         const std::string& actionName = action->getName();
         if ((actionName == "berserker stance" ||
             actionName == "whirlwind" ||
+            actionName == "mortal strike" ||
+            actionName == "heroic strike" ||
             actionName == "cleave") &&
             AI_VALUE2(bool, "trigger active", "melee light aoe") &&
             bot->HasSpell(12292) &&
