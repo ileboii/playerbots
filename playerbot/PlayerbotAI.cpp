@@ -4500,14 +4500,14 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target, Item* itemTarget, bool
 
     if (oldSel)
         bot->SetSelectionGuid(oldSel);
-
+    /*
     if (HasStrategy("debug spell", BotState::BOT_STATE_NON_COMBAT))
     {
         std::ostringstream out;
         out << "Casting " <<ChatHelper::formatSpell(pSpellInfo);
         TellPlayerNoFacing(GetMaster(), out);
     }
-
+    */
     return true;
 }
 
@@ -4634,14 +4634,14 @@ bool PlayerbotAI::CastSpell(uint32 spellId, GameObject* goTarget, Item* itemTarg
         aiObjectContext->GetValue<LastSpellCast&>("last spell cast")->Get().Set(spellId, goTarget->GetObjectGuid(), time(0));
 
     aiObjectContext->GetValue<ai::PositionMap&>("position")->Get()["random"].Reset();
-
+    /*
     if (HasStrategy("debug spell", BotState::BOT_STATE_NON_COMBAT))
     {
         std::ostringstream out;
         out << "Casting " << ChatHelper::formatSpell(pSpellInfo);
         TellPlayerNoFacing(GetMaster(), out);
     }
-
+    */
     return true;
 }
 
@@ -4779,14 +4779,14 @@ bool PlayerbotAI::CastSpell(uint32 spellId, float x, float y, float z, Item* ite
 
     if (oldSel)
         bot->SetSelectionGuid(oldSel);
-
+    /*
     if (HasStrategy("debug spell", BotState::BOT_STATE_NON_COMBAT))
     {
         std::ostringstream out;
         out << "Casting " << ChatHelper::formatSpell(pSpellInfo);
         TellPlayerNoFacing(GetMaster(), out);
     }
-
+    */
     return true;
 }
 
