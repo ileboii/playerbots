@@ -112,10 +112,10 @@ namespace ai
             creators["collision"] = [](PlayerbotAI* ai) { return new CollisionValue(ai); };
             creators["skip spells list"] = [](PlayerbotAI* ai) { return new SkipSpellsListValue(ai); };
             creators["nearest game objects"] = [](PlayerbotAI* ai) { return new NearestGameObjects(ai); };
-            creators["nearest game objects no los"] = [](PlayerbotAI* ai) { return new NearestGameObjects(ai, sPlayerbotAIConfig.sightDistance, true); };
+            creators["nearest game objects no los"] = [](PlayerbotAI* ai) { return new NearestGameObjects(ai, sPlayerbotAIConfig.sightDistance, LOS_IGNORE); };
             creators["nearest dynamic objects"] = [](PlayerbotAI* ai) { return new NearestDynamicObjects(ai); };
-            creators["nearest dynamic objects no los"] = [](PlayerbotAI* ai) { return new NearestDynamicObjects(ai, sPlayerbotAIConfig.sightDistance, true); };
-            creators["closest game objects"] = [](PlayerbotAI* ai) { return new NearestGameObjects(ai, INTERACTION_DISTANCE); };
+            creators["nearest dynamic objects no los"] = [](PlayerbotAI* ai) { return new NearestDynamicObjects(ai, sPlayerbotAIConfig.sightDistance, LOS_IGNORE); };
+            creators["closest game objects static los"] = [](PlayerbotAI* ai) { return new NearestGameObjects(ai, INTERACTION_DISTANCE, LOS_STATIC); };
             creators["nearest npcs"] = [](PlayerbotAI* ai) { return new NearestNpcsValue(ai); };
             creators["nearest npcs no los"] = [](PlayerbotAI* ai) { return new NearestNpcsValue(ai, sPlayerbotAIConfig.sightDistance, true); };
             creators["nearest vehicles"] = [](PlayerbotAI* ai) { return new NearestVehiclesValue(ai); };
@@ -176,6 +176,10 @@ namespace ai
             creators["has attackers"] = [](PlayerbotAI* ai) { return new HasAttackersValue(ai); };
             creators["has possible attack targets"] = [](PlayerbotAI* ai) { return new HasPossibleAttackTargetsValue(ai); };
             creators["mounted"] = [](PlayerbotAI* ai) { return new IsMountedValue(ai); };
+            creators["mount skilltype"] = [](PlayerbotAI* ai) { return new MountSkillTypeValue(ai); };
+            creators["available mount vendors"] = [](PlayerbotAI* ai) { return new AvailableMountVendors(ai); };
+            creators["can train mount"] = [](PlayerbotAI* ai) { return new CanTrainMountValue(ai); };
+            creators["can buy mount"] = [](PlayerbotAI* ai) { return new CanBuyMountValue(ai); };
 
             creators["can loot"] = [](PlayerbotAI* ai) { return new CanLootValue(ai); };
             creators["loot target"] = [](PlayerbotAI* ai) { return new LootTargetValue(ai); };
@@ -321,6 +325,7 @@ namespace ai
             creators["money needed for"] = [](PlayerbotAI* ai) { return new MoneyNeededForValue(ai); };
             creators["total money needed for"] = [](PlayerbotAI* ai) { return new TotalMoneyNeededForValue(ai); };
             creators["free money for"] = [](PlayerbotAI* ai) { return new FreeMoneyForValue(ai); };
+            creators["has all money for"] = [](PlayerbotAI* ai) { return new HasAllMoneyForValue(ai); };
             creators["should get money"] = [](PlayerbotAI* ai) { return new ShouldGetMoneyValue(ai); };
 
             creators["free move center"] = [](PlayerbotAI* ai) { return new FreeMoveCenterValue(ai); };
@@ -368,6 +373,9 @@ namespace ai
             creators["group ready"] = [](PlayerbotAI* ai) { return new GroupReadyValue(ai); };
 
             creators["petition signs"] = [](PlayerbotAI* ai) { return new PetitionSignsValue(ai); };
+            creators["can hand in petition"] = [](PlayerbotAI* ai) { return new CanHandInPetitionValue(ai); };
+            creators["can buy tabard"] = [](PlayerbotAI* ai) { return new CanBuyTabard(ai); };
+            
 
             creators["experience"] = [](PlayerbotAI* ai) { return new ExperienceValue(ai); };
             creators["honor"] = [](PlayerbotAI* ai) { return new HonorValue(ai); };
@@ -382,7 +390,8 @@ namespace ai
             creators["RTSC next spell action"] = [](PlayerbotAI* ai) { return new RTSCNextSpellActionValue(ai); };
             creators["RTSC saved location"] = [](PlayerbotAI* ai) { return new RTSCSavedLocationValue(ai); };
 
-            creators["trainable class spells"] = [](PlayerbotAI* ai) { return new TrainableClassSpells(ai); };
+            creators["trainable spells"] = [](PlayerbotAI* ai) { return new TrainableSpellsValue(ai); };
+            creators["available trainers"] = [](PlayerbotAI* ai) { return new AvailableTrainersValue(ai); };
             creators["mount list"] = [](PlayerbotAI* ai) { return new MountListValue(ai); };
             creators["current mount speed"] = [](PlayerbotAI* ai) { return new CurrentMountSpeedValue(ai); };
 
@@ -412,12 +421,17 @@ namespace ai
             //Travel
             creators["focus travel target"] = [](PlayerbotAI* ai) { return new FocusTravelTargetValue(ai); };
             creators["has focus travel target"] = [](PlayerbotAI* ai) { return new HasFocusTravelTargetValue(ai); };
+
+            creators["travel target active"] = [](PlayerbotAI* ai) { return new TravelTargetActiveValue(ai); };            
+            creators["travel target traveling"] = [](PlayerbotAI* ai) { return new TravelTargetTravelingValue(ai); };
             
             creators["travel target"] = [](PlayerbotAI* ai) { return new TravelTargetValue(ai); };
-            creators["travel destinations"] = [](PlayerbotAI* ai) { return new TravelDestinationsValue(ai); };
+            creators["future travel destinations"] = [](PlayerbotAI* ai) { return new FutureTravelDestinationsValue(ai); };
+            creators["no active travel destinations"] = [](PlayerbotAI* ai) { return new NoActiveTravelDestinationsValue(ai); };
             creators["need travel purpose"] = [](PlayerbotAI* ai) { return new NeedTravelPurposeValue(ai); };
             creators["should travel named"] = [](PlayerbotAI* ai) { return new ShouldTravelNamedValue(ai); };
             creators["in overworld"] = [](PlayerbotAI* ai) { return new InOverworldValue(ai); };
+            creators["quest stage active"] = [](PlayerbotAI* ai) { return new QuestStageActiveValue(ai); };
 
             
             

@@ -347,9 +347,9 @@ uint8 QuestObjectiveTravelDestination::GetObjective() const
 
 bool RpgTravelDestination::IsPossible(const PlayerTravelInfo& info) const
 {
-    bool isUsefull = false;
+    /*bool isUsefull = false;
 
-    if (GetEntry() > 0)
+    if (GetEntry() > 0 && GetPurpose() != TravelDestinationPurpose::GenericRpg && GetPurpose() != TravelDestinationPurpose::Trainer && GetPurpose() != TravelDestinationPurpose::)
     {
 
         CreatureInfo const* cInfo = this->GetCreatureInfo();
@@ -396,6 +396,7 @@ bool RpgTravelDestination::IsPossible(const PlayerTravelInfo& info) const
 
     if (!isUsefull)
         return false;
+        */
 
     WorldPosition firstPoint = *GetPoints().front();
 
@@ -641,7 +642,7 @@ bool GatherTravelDestination::IsPossible(const PlayerTravelInfo& info) const
 
     if (GetEntry() > 0)
     {
-        CreatureInfo const* cInfo = ObjectMgr::GetCreatureTemplate(GetEntry());
+        CreatureInfo const* cInfo = GetCreatureInfo();
 
         if (!cInfo)
             return false;
@@ -652,7 +653,7 @@ bool GatherTravelDestination::IsPossible(const PlayerTravelInfo& info) const
     }
     else
     {
-        GameObjectInfo const* goInfo = ObjectMgr::GetGameObjectInfo(GetEntry());
+        GameObjectInfo const* goInfo = GetGoInfo();
 
         if (!goInfo)
             return false;
@@ -700,6 +701,28 @@ bool GatherTravelDestination::IsActive(Player* bot, const PlayerTravelInfo& info
 
     if (!IsPossible(info))
         return false;   
+
+    if (!IsOut(bot))
+    {
+        if (this->GetEntry() > 0)
+        {
+            std::list<ObjectGuid> targets = AI_VALUE(std::list<ObjectGuid>, "possible targets");
+
+            for (auto& target : targets)
+                if (target.GetEntry() == GetEntry() && target.IsCreature() && ai->GetCreature(target) && ai->GetCreature(target)->IsAlive())
+                    return true;
+        }
+        else
+        {
+            std::list<ObjectGuid> targets = AI_VALUE(std::list<ObjectGuid>, "nearest game objects no los");
+
+            for (auto& target : targets)
+                if (target.GetEntry() == GetEntry())
+                    return true;
+        }
+
+        return false;
+    }
 
     return true;
 }
@@ -759,6 +782,15 @@ void TravelTarget::SetStatus(TravelStatus status) {
     }
 }
 
+bool TravelTarget::IsConditionsActive()
+{
+    for (auto& condition : travelConditions)
+        if (!AI_VALUE(bool, condition))
+            return false;
+
+    return true;
+}
+
 bool TravelTarget::IsActive() {
     if (m_status == TravelStatus::TRAVEL_STATUS_NONE || m_status == TravelStatus::TRAVEL_STATUS_EXPIRED || m_status == TravelStatus::TRAVEL_STATUS_PREPARE)
         return false;
@@ -781,7 +813,7 @@ bool TravelTarget::IsActive() {
     if (IsWorking())
         return true;   
 
-    if (!tDestination->IsActive(bot, PlayerTravelInfo(bot))) //Target has become invalid. Stop.
+    if (!tDestination->IsActive(bot, PlayerTravelInfo(bot)) || !IsConditionsActive()) //Target has become invalid. Stop.
     {
         SetStatus(TravelStatus::TRAVEL_STATUS_COOLDOWN);
         return true;
@@ -801,7 +833,7 @@ bool TravelTarget::IsTraveling() {
             return false;
         }
 
-    if (!tDestination->IsActive(bot, PlayerTravelInfo(bot)) && !forced) //Target has become invalid. Stop.
+    if ((!tDestination->IsActive(bot, PlayerTravelInfo(bot)) || !IsConditionsActive()) && !forced) //Target has become invalid. Stop.
     {
         SetStatus(TravelStatus::TRAVEL_STATUS_COOLDOWN);
         return false;
@@ -830,7 +862,7 @@ bool TravelTarget::IsWorking() {
     if (m_status != TravelStatus::TRAVEL_STATUS_WORK)
         return false;
 
-    if (!tDestination->IsActive(bot, PlayerTravelInfo(bot))) //Target has become invalid. Stop.
+    if (!tDestination->IsActive(bot, PlayerTravelInfo(bot)) || !IsConditionsActive()) //Target has become invalid. Stop.
     {
         SetStatus(TravelStatus::TRAVEL_STATUS_COOLDOWN);
         return false;
@@ -1141,10 +1173,9 @@ void TravelMgr::LoadQuestTravelTable()
     Clear();
 
     sLog.outString("Loading trainable spells.");
-    if (GAI_VALUE(trainableSpellMap*, "trainable spell map")->empty())
-    {
-
-    }     
+    GAI_VALUE(trainableSpellMap*, "trainable spell map");
+    GAI_VALUE(std::vector<MountValue>, "full mount list");
+    
 
     sLog.outString("Loading object locations.");
 
@@ -2051,12 +2082,10 @@ void TravelMgr::LoadQuestTravelTable()
 #endif     
 }
 
-DestinationList TravelMgr::GetDestinations(const PlayerTravelInfo& info, uint32 purposeFlag, const int32 entry, bool onlyPossible, float maxDistance) const
+DestinationList TravelMgr::GetDestinations(const PlayerTravelInfo& info, uint32 purposeFlag, const std::vector<int32>& entries, bool onlyPossible, float maxDistance) const
 {
     WorldPosition center = info.GetPosition();
     DestinationList retDests;
-
-    //std::mutex resultMutex;
 
     for (auto& [purpose, entryDests] : destinationMap)
     {
@@ -2064,37 +2093,31 @@ DestinationList TravelMgr::GetDestinations(const PlayerTravelInfo& info, uint32 
         if (purposeFlag != (uint32)TravelDestinationPurpose::None && !((uint32)purpose & (uint32)purposeFlag))
             continue;
 
-        std::for_each(
-            std::execution::seq,
-            entryDests.begin(),
-            entryDests.end(),
-            [&](auto& entryDests) {
-                if (entry && entryDests.first != entry)
-                    return;
+        for (auto& [destEntry, dests] : entryDests)
+        {
+            if (entries.size() && std::find(entries.begin(), entries.end(), destEntry) == entries.end())
+                continue;
 
-                DestinationList dests = entryDests.second;
+            for (auto& dest : dests)
+            {
+                if (onlyPossible && !dest->IsPossible(info))
+                    continue;
 
-                for (auto& dest : dests)
-                {
-                    if (onlyPossible && !dest->IsPossible(info))
-                        return;
-
-                    if (maxDistance > 0 && dest->DistanceTo(center) > maxDistance)
-                        return;
-
-                    //std::lock_guard<std::mutex> guard(resultMutex);
-                    retDests.push_back(dest);
-                }
-            });    
+                if (maxDistance > 0 && dest->DistanceTo(center) > maxDistance)
+                    continue;
+                
+                retDests.push_back(dest);
+            }
+        }
     }
 
     return retDests;
 }
 
-PartitionedTravelList TravelMgr::GetPartitions(const WorldPosition& center, const std::vector<uint32>& distancePartitions, const PlayerTravelInfo& info, uint32 purposeFlag, const int32 entry, bool onlyPossible, float maxDistance) const
+PartitionedTravelList TravelMgr::GetPartitions(const WorldPosition& center, const std::vector<uint32>& distancePartitions, const PlayerTravelInfo& info, uint32 purposeFlag, const std::vector<int32>& entries, bool onlyPossible, float maxDistance) const
 {
-    std::unordered_map<uint32, std::vector<TravelPoint>> pointMap;
-    DestinationList destinations = GetDestinations(info, purposeFlag, entry, onlyPossible, maxDistance);
+    PartitionedTravelList pointMap;
+    DestinationList destinations = GetDestinations(info, purposeFlag, entries, onlyPossible, maxDistance);
 
     bool canFightElite = info.GetBoolValue("can fight elite");
     uint32 botLevel = info.GetLevel();
@@ -2111,9 +2134,18 @@ PartitionedTravelList TravelMgr::GetPartitions(const WorldPosition& center, cons
     if (botLevel < 6)
         botLevel = 6;
 
-    for(auto& dest : destinations)
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    std::shuffle(destinations.begin(), destinations.end(), std::default_random_engine(seed));
+
+    for (auto& dest : destinations)
     {
-        for (auto& position : dest->GetPoints())
+        TravelPoint point(dest, sTravelMgr.nullWorldPosition, 0.0f);
+        uint32 minPartition = 0;
+
+        std::vector<WorldPosition*> points = dest->GetPoints();
+        std::shuffle(points.begin(), points.end(), std::default_random_engine(seed));
+
+        for (auto& position : points)
         {
             uint32 areaLevel = position->getAreaLevel();
 
@@ -2124,34 +2156,36 @@ PartitionedTravelList TravelMgr::GetPartitions(const WorldPosition& center, cons
                 continue;
 
             float distance = position->distance(center);
-            TravelPoint point(dest, position, distance);
 
+            uint32 currentPartition = 0;
             for (auto& partition : distancePartitions)
             {
                 if (partition == distancePartitions.back() || distance < partition)
                 {
-                    pointMap[partition].push_back(point);
+                    currentPartition = partition;
                     break;
                 }
             }
+
+            if (minPartition && currentPartition >= minPartition)
+                continue;
+
+            minPartition = currentPartition;
+            point = TravelPoint(dest, position, distance);
         }
+
+        if (minPartition)
+            pointMap[minPartition].push_back(point);
     }
 
-    PartitionedTravelList retList;
-
-    for (auto& [partition, points] : pointMap)
-    {
-        ShuffleTravelPoints(points);
-
-        for (auto& point : points)
-            retList[partition].push_back(point);
-    }
-
-    return retList;
+    return pointMap;
 }
 
 void TravelMgr::ShuffleTravelPoints(std::vector<TravelPoint>&points)
 {
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    std::shuffle(points.begin(), points.end(), std::default_random_engine(seed));
+    /*
     std::vector<uint32> weights;
     std::transform(points.begin(), points.end(), std::back_inserter(weights), [](TravelPoint point) { return 200000 / (1 + std::get<2>(point)); });
 
@@ -2168,6 +2202,7 @@ void TravelMgr::ShuffleTravelPoints(std::vector<TravelPoint>&points)
     std::mt19937 gen(time(0));
 
     WeightedShuffle(points.begin(), points.end(), weights.begin(), weights.end(), gen);
+    */
 }
 
 void TravelMgr::SetNullTravelTarget(TravelTarget* target) const

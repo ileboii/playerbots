@@ -3,6 +3,7 @@
 #include "TravelValues.h"
 #include "QuestValues.h"
 #include "SharedValueContext.h"
+#include "BudgetValues.h"
 
 using namespace ai;
 
@@ -182,7 +183,6 @@ EntryTravelPurposeMap EntryTravelPurposeMapValue::Calculate()
     return entryPurposeMap;
 }
 
-
 uint32 EntryTravelPurposeMapValue::SkillIdToGatherEntry(int32 entry)
 {
     if (entry > 0)
@@ -224,9 +224,6 @@ uint32 EntryTravelPurposeMapValue::SkillIdToGatherEntry(int32 entry)
 
 bool NeedTravelPurposeValue::Calculate()
 {
-    if (AI_VALUE(TravelTarget*, "travel target")->IsActive())
-        return false;
-
     TravelDestinationPurpose purpose = TravelDestinationPurpose(stoi(getQualifier()));
 
     const std::map<TravelDestinationPurpose, SkillType> gatheringSkills =
@@ -288,10 +285,7 @@ bool NeedTravelPurposeValue::Calculate()
 
 bool ShouldTravelNamedValue::Calculate()
 {
-    if (AI_VALUE(TravelTarget*, "travel target")->IsActive())
-        return false;
-
-    std::string_view name = getQualifier();
+    std::string name = getQualifier();
 
     WorldPosition botPos(bot);
 
@@ -315,27 +309,90 @@ bool ShouldTravelNamedValue::Calculate()
 
         return true;
     }
+    else if (name == "mount")
+    {
+        if (AI_VALUE(bool, "can buy mount"))
+            return true;
 
+        return false;
+    }
+    else if (name.find("trainer") == 0)
+    {
+        TrainerType trainerType = TRAINER_TYPE_CLASS;
+        NeedMoneyFor budgetType = NeedMoneyFor::spells;
+
+        if (name == "trainer mount")
+        {
+            trainerType = TRAINER_TYPE_MOUNTS;
+            budgetType = NeedMoneyFor::mount; //Only train mounts when you can actually buy mount
+        }
+        if (name == "trainer trade")
+        {
+            trainerType = TRAINER_TYPE_TRADESKILLS;
+            budgetType = NeedMoneyFor::skilltraining;
+        }
+        if (name == "trainer pet")
+        {
+            trainerType = TRAINER_TYPE_PETS;
+            budgetType = NeedMoneyFor::anything;
+        }
+
+        if (AI_VALUE2(uint32, "train cost", trainerType) == 0) //Has nothing to train
+            return false;
+
+        if (!AI_VALUE2(bool, "has all money for", (uint32)budgetType))
+            return false;
+
+        return true;
+    }
 
     return false;
 }
 
+bool TravelTargetActiveValue::Calculate() 
+{
+    return AI_VALUE(TravelTarget*, "travel target")->IsActive(); 
+};
+
+bool TravelTargetTravelingValue::Calculate()
+{
+    return AI_VALUE(TravelTarget*, "travel target")->IsTraveling();
+};
+
 bool QuestStageActiveValue::Calculate()
 {
     uint32 questId = getMultiQualifierInt(getQualifier(), 0, ",");
-    uint32 stage = getMultiQualifierInt(getQualifier(), 1, ",");
+    TravelDestinationPurpose purpose = (TravelDestinationPurpose)getMultiQualifierInt(getQualifier(), 1, ",");
+
     uint32 objective = 0;
-    if (stage == 1)
-        objective = getMultiQualifierInt(getQualifier(), 2, ",");
 
-    if (stage == 0 && bot->HasQuest(questId))
-        return false;
+    switch (purpose)
+    {
+    case TravelDestinationPurpose::QuestGiver:
+        if (bot->HasQuest(questId))
+            return false;
+        break;
+    case TravelDestinationPurpose::QuestTaker:
+        if (!bot->CanCompleteQuest(questId))
+            return false;
+        break;
+    case TravelDestinationPurpose::QuestObjective1:
+        objective = 1;
+        break;
+    case TravelDestinationPurpose::QuestObjective2:
+        objective = 2;
+        break;
+    case TravelDestinationPurpose::QuestObjective3:
+        objective = 3;
+        break;
+    case TravelDestinationPurpose::QuestObjective4:
+        objective = 4;
+        break;
+    }
 
-    if (stage == 1 && !AI_VALUE2(bool, "need quest objective", objective))
-        return false;
-
-    if (!bot->CanCompleteQuest(questId))
-        return false;
+    if(objective)
+        if (!AI_VALUE2(bool, "need quest objective", objective - 1))
+            return false;
 
     return true;
 }
