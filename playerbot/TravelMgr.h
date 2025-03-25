@@ -70,9 +70,6 @@ namespace ai
 
 		std::unordered_map<std::string, bool> boolValues = 
 		{
-			{"group or::should sell,can sell,following party,near leader", false},
-			{"group or::should repair,can repair,following party,near leader", false},
-			{"group or::should ah sell,can ah sell,following party,near leader", false},
 			{"should get money", false},
 			{"should sell", false},
 			{"can sell", false},
@@ -81,7 +78,6 @@ namespace ai
 			{"should ah sell", false},
 			{"can ah sell", false},
 			{"can get mail", false },
-			{"has strategy::free", false},
 			{"has strategy::rpg quest", false},
 			{"can fight equal", false},
 			{"can fight elite", false},
@@ -124,9 +120,10 @@ namespace ai
 		virtual bool IsActive(Player* bot, const PlayerTravelInfo& info) const { return false; }
 
 		virtual int32 GetEntry() const { return 0; }
-		virtual uint8 GetSubEntry() const { return 0; }
 		WorldPosition* NearestPoint(const WorldPosition& pos) const;
 		std::vector<WorldPosition*> NextPoint(const WorldPosition& pos) const;
+
+		virtual std::string GetShortName() const { return ""; };
 	protected:
 		void SetExpireFast() { expireDelay = 60000; } //1 minute
 		void SetCooldownShort() { cooldownDelay = 1000; } //1 second
@@ -154,6 +151,8 @@ namespace ai
 		virtual std::string GetTitle() const override { return "no destination"; }
 
 		virtual bool IsIn(const WorldPosition& pos, float radius = 0) const override { return true; }
+
+		virtual std::string GetShortName() const { return "idle"; };
 	protected:
 		virtual bool IsOut(const WorldPosition& pos, float radius = 0) const override { return false; }
 	};
@@ -167,6 +166,8 @@ namespace ai
 		virtual CreatureInfo const* GetCreatureInfo() const { return creatureInfo; }
 		TravelDestinationPurpose GetPurpose() const { return purpose; }
 		bool HasNpcFlag(uint32 flag) { if(GetCreatureInfo() && (GetCreatureInfo()->NpcFlags & flag)) return true; return false; }
+
+		virtual std::string GetShortName() const;
 	private:
 		CreatureInfo const* creatureInfo = nullptr;
 		GameObjectInfo const* goInfo = nullptr;
@@ -330,8 +331,7 @@ namespace ai
 		bool IsGroupCopy() const { return groupCopy; }
 		bool IsForced() const { return forced; }
 
-
-		bool IsConditionsActive();
+		bool IsConditionsActive(bool clear = false);
 
 		bool IsActive();
 		bool IsTraveling();
@@ -339,8 +339,8 @@ namespace ai
 		bool IsPreparing();
 
 		uint32 GetRetryCount(bool isMove) const { return isMove ? moveRetryCount : extendRetryCount; }
-		uint32 GetTimeLeft() const { return statusTime - GetExpiredTime(); }
-		uint32 GetExpiredTime() const { return WorldTimer::getMSTime() - startTime; }
+		int32 GetTimeLeft() const { return statusTime - GetExpiredTime(); }
+		int32 GetExpiredTime() const { return WorldTimer::getMSTime() - startTime; }
 
 		void SetRetry(bool isMove, uint32 newCount = 0) { if (isMove) moveRetryCount = newCount; else extendRetryCount = newCount; }
 		bool IsMaxRetry(bool isMove) { return isMove ? (moveRetryCount > 10) : (extendRetryCount > 5); }
@@ -349,6 +349,7 @@ namespace ai
 		
 		void AddCondition(std::string condition) { travelConditions.push_back(condition); }
 		void SetConditions(std::vector<std::string> conditions) { travelConditions = conditions; }
+		std::vector<std::string> GetConditions() { return travelConditions; }
 
 		void SetStatus(TravelStatus status);
 		void SetExpireIn(uint32 expireMs) { statusTime = GetExpiredTime() + expireMs; }
@@ -356,7 +357,7 @@ namespace ai
 		void SetGroupCopy(bool isGroupCopy = true) { groupCopy = isGroupCopy; }
 		void SetRadius(float radius1) { radius = radius1; }
 
-		void IncRetry(bool isMove) { if (isMove) moveRetryCount += 2; else extendRetryCount += 2; }
+		void IncRetry(bool isMove) { if (isMove) moveRetryCount+=2; else extendRetryCount++; }
 		void DecRetry(bool isMove) { if (isMove && moveRetryCount > 0) moveRetryCount--; else if (extendRetryCount > 0) extendRetryCount--; }
 
 		void CopyTarget(TravelTarget* const target);

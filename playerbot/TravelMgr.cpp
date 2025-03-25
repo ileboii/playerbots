@@ -9,7 +9,6 @@
 #include "PlayerbotAI.h"
 #include "BotTests.h"
 #include "Globals/ObjectAccessor.h"
-#include <execution>
 
 using namespace ai;
 using namespace MaNGOS;
@@ -57,6 +56,48 @@ WorldPosition* TravelDestination::NearestPoint(const WorldPosition& pos) const {
 std::vector <WorldPosition*> TravelDestination::NextPoint(const WorldPosition& pos) const {
     return pos.GetNextPoint(GetPoints());
 }
+
+std::string EntryTravelDestination::GetShortName() const
+{
+    switch (purpose)
+    {
+    case TravelDestinationPurpose::QuestGiver:
+        return "questgiver";
+    case TravelDestinationPurpose::QuestObjective1:
+    case TravelDestinationPurpose::QuestObjective2:
+    case TravelDestinationPurpose::QuestObjective3:
+    case TravelDestinationPurpose::QuestObjective4:
+        return "questobjective";
+    case TravelDestinationPurpose::QuestTaker:
+        return "questtaker";
+    case TravelDestinationPurpose::Vendor:
+        return "vendor";
+    case TravelDestinationPurpose::AH:
+        return "ah";
+    case TravelDestinationPurpose::Repair:
+        return "repair";
+    case TravelDestinationPurpose::Mail:
+        return "mail";
+    case TravelDestinationPurpose::Trainer:
+        return "trainer";
+    case TravelDestinationPurpose::Explore:
+        return "explore";
+    case TravelDestinationPurpose::GenericRpg:
+        return "rpg";
+    case TravelDestinationPurpose::Grind:
+        return "grind";
+    case TravelDestinationPurpose::Boss:
+        return  "boss";
+    case TravelDestinationPurpose::GatherFishing:
+    case TravelDestinationPurpose::GatherHerbalism:
+    case TravelDestinationPurpose::GatherMining:
+    case TravelDestinationPurpose::GatherSkinning:
+        return "gather";
+    default:
+        return "unknown";
+    }
+    return "none";
+};
 
 std::string QuestTravelDestination::GetTitle() const {
     return ChatHelper::formatQuest(GetQuestTemplate());
@@ -124,45 +165,38 @@ bool QuestRelationTravelDestination::IsActive(Player* bot, const PlayerTravelInf
     if(!IsPossible(info))
         return false;
 
-    bool forceThisQuest = info.HasFocusQuest();
+    bool forceThisQuest = info.HasFocusQuest(); //Checked in IsPossible if it's 'this' quest.
 
     if (GetRelation() == 0)
     {
-        if ((!info.HasFocusQuest() && !bot->GetMap()->IsContinent()) || !bot->CanTakeQuest(GetQuestTemplate(), false))
+        if (!bot->GetMap()->IsContinent()) //This gives issues for bot->CanTakeQuest so stop here.
             return false;
 
-        if (!forceThisQuest)
+        if (forceThisQuest)
+        {
+            if (!AI_VALUE2(bool, "group or", "following party,can accept quest npc::" + std::to_string(GetEntry()))) //Noone has yellow exclamation mark.
+                if (!AI_VALUE2(bool, "group or", "following party,can accept quest low level npc::" + std::to_string(GetEntry()))) //Noone can do this quest.
+                    return false;
+        }
+        else
         {
             if (info.GetBoolValue("can fight equal"))
             {
-                if (!AI_VALUE2(bool, "group or", "following party,near leader,can accept quest npc::" + std::to_string(GetEntry()))) //Noone has yellow exclamation mark.
-                    if (!AI_VALUE2(bool, "group or", "following party,near leader,can accept quest low level npc::" + std::to_string(GetEntry()) + ",need quest reward::" + std::to_string(GetQuestId()))) //Noone can do this quest for a usefull reward.
+                if (!AI_VALUE2(bool, "group or", "following party,can accept quest npc::" + std::to_string(GetEntry()))) //Noone has yellow exclamation mark.
+                    if (!AI_VALUE2(bool, "group or", "following party,can accept quest low level npc::" + std::to_string(GetEntry()) + ",need quest reward::" + std::to_string(GetQuestId()))) //Noone can do this quest for a usefull reward.
                         return false;
             }
             else
             {
-                if (!AI_VALUE2(bool, "group or", "following party,near leader,can accept quest low level npc::" + std::to_string(GetEntry()))) //Noone can pick up this quest for money.
+                if (!AI_VALUE2(bool, "group or", "following party,can accept quest low level npc::" + std::to_string(GetEntry()))) //Noone can pick up this quest for money.
                     return false;
             }
-        }
-        else
-        {
-            if (!AI_VALUE2(bool, "can accept quest npc", std::to_string(GetEntry())))
-                return false;
         }
     }
     else
     {
-        if (!forceThisQuest)
-        {
-            if (!AI_VALUE2(bool, "group or", "following party,near leader,can turn in quest npc::" + std::to_string(GetEntry())))
-                return false;
-        }
-        else
-        {
-            if (!AI_VALUE2(bool, "can turn in quest npc", std::to_string(GetEntry())))
-                return false;
-        }
+        if (!AI_VALUE2(bool, "group or", "following party,can turn in quest npc::" + std::to_string(GetEntry())))
+            return false;
     }
 
     if (GetEntry() > 0)
@@ -286,7 +320,7 @@ bool QuestObjectiveTravelDestination::IsActive(Player* bot, const PlayerTravelIn
 
    std::vector<std::string> qualifier = { std::to_string(GetQuestTemplate()->GetQuestId()), std::to_string(GetObjective()) };
 
-    if (!AI_VALUE2(bool, "group or", "following party,near leader,need quest objective::" + Qualified::MultiQualify(qualifier,","))) //Noone needs the quest objective.
+    if (!AI_VALUE2(bool, "group or", "following party,need quest objective::" + Qualified::MultiQualify(qualifier,","))) //Noone needs the quest objective.
         return false;
 
     WorldPosition botPos(bot);
@@ -346,58 +380,7 @@ uint8 QuestObjectiveTravelDestination::GetObjective() const
 }
 
 bool RpgTravelDestination::IsPossible(const PlayerTravelInfo& info) const
-{
-    /*bool isUsefull = false;
-
-    if (GetEntry() > 0 && GetPurpose() != TravelDestinationPurpose::GenericRpg && GetPurpose() != TravelDestinationPurpose::Trainer && GetPurpose() != TravelDestinationPurpose::)
-    {
-
-        CreatureInfo const* cInfo = this->GetCreatureInfo();
-
-        if (!cInfo)
-            return false;
-
-        if (cInfo->NpcFlags & UNIT_NPC_FLAG_VENDOR)
-        {
-            if (info.GetBoolValue2("group or", "should sell,can sell,following party,near leader"))
-                isUsefull = true;
-            else if (info.GetBoolValue2("has strategy", "free") && info.GetBoolValue("should sell") && info.GetBoolValue("can sell"))
-                isUsefull = true;
-        }
-
-        if (cInfo->NpcFlags & UNIT_NPC_FLAG_REPAIR)
-        {
-            if (info.GetBoolValue2("group or", "should repair,can repair,following party,near leader"))
-                isUsefull = true;
-            else if (info.GetBoolValue2("has strategy", "free") && info.GetBoolValue("should repair") && info.GetBoolValue("can repair"))
-                isUsefull = true;
-        }
-
-        if (cInfo->NpcFlags & UNIT_NPC_FLAG_AUCTIONEER)
-        {
-            if (info.GetBoolValue2("group or", "should ah sell,can ah sell,following party,near leader"))
-                isUsefull = true;
-            else if (info.GetBoolValue2("has strategy", "free") && info.GetBoolValue("should ah sell") && info.GetBoolValue("can ah sell"))
-                isUsefull = true;
-        }
-    }
-    else
-    {
-        GameObjectInfo const* gInfo = this->GetGoInfo();
-
-        if (!gInfo)
-            return false;
-
-        if (gInfo->type == GAMEOBJECT_TYPE_MAILBOX)
-            if (info.GetBoolValue("can get mail"))
-                isUsefull = true;
-    }
-
-
-    if (!isUsefull)
-        return false;
-        */
-
+{   
     WorldPosition firstPoint = *GetPoints().front();
 
     //Horde pvp baracks
@@ -443,11 +426,39 @@ std::string RpgTravelDestination::GetTitle() const
 {
     std::ostringstream out;
 
+    out << GetShortName();
 
     if(GetEntry() > 0)
-        out << "rpg npc ";
+        out << " npc ";
+    else
+        out << " object ";
 
     out << ChatHelper::formatWorldEntry(GetEntry());
+
+    switch (GetPurpose())
+    {    
+    case TravelDestinationPurpose::Vendor:
+        out << " to sell items";
+        break;
+    case TravelDestinationPurpose::AH:
+        out << " to put items on auction";
+        break;
+    case TravelDestinationPurpose::Repair:
+        out << " to repair";
+        break;
+    case TravelDestinationPurpose::Mail:
+        out << " to receive mail";
+        break;
+    case TravelDestinationPurpose::Trainer:
+        out << " to train a skill";
+        break;
+    case TravelDestinationPurpose::GenericRpg: 
+        out << ""; //Named travel purpose.
+        break;
+    default:
+        out << "";
+        break;
+    }
 
     return out.str();
 }
@@ -730,7 +741,7 @@ bool GatherTravelDestination::IsActive(Player* bot, const PlayerTravelInfo& info
 std::string GatherTravelDestination::GetTitle() const {
     std::ostringstream out;
 
-    out << "gathering location ";
+    out << "gathering node ";
 
     out << ChatHelper::formatWorldEntry(GetEntry());
 
@@ -782,8 +793,12 @@ void TravelTarget::SetStatus(TravelStatus status) {
     }
 }
 
-bool TravelTarget::IsConditionsActive()
+bool TravelTarget::IsConditionsActive(bool clear)
 {
+    if (clear)
+        for (auto& condition : travelConditions)
+            context->ClearValues(condition);
+
     for (auto& condition : travelConditions)
         if (!AI_VALUE(bool, condition))
             return false;
@@ -800,6 +815,7 @@ bool TravelTarget::IsActive() {
 
     if ((statusTime > 0 && startTime + statusTime < WorldTimer::getMSTime()))
     {
+        ai->TellDebug(ai->GetMaster(), "Travel target expired because the status time was exceeded.", "debug travel");
         SetStatus(TravelStatus::TRAVEL_STATUS_EXPIRED);
         return false;
     }
@@ -815,6 +831,7 @@ bool TravelTarget::IsActive() {
 
     if (!tDestination->IsActive(bot, PlayerTravelInfo(bot)) || !IsConditionsActive()) //Target has become invalid. Stop.
     {
+        ai->TellDebug(ai->GetMaster(), "The target is cooling down because the destination was no longer active or the conditions are no longer true.", "debug travel");
         SetStatus(TravelStatus::TRAVEL_STATUS_COOLDOWN);
         return true;
     }
@@ -829,12 +846,14 @@ bool TravelTarget::IsTraveling() {
     if (bot->GetGroup() && !bot->GetGroup()->IsLeader(bot->GetObjectGuid()))
         if (ai->HasStrategy("follow", BotState::BOT_STATE_NON_COMBAT) || ai->HasStrategy("stay", BotState::BOT_STATE_NON_COMBAT))
         {
+            ai->TellDebug(ai->GetMaster(), "The target is cooling down because the bot is following a group leader.", "debug travel");
             SetStatus(TravelStatus::TRAVEL_STATUS_COOLDOWN);
             return false;
         }
 
     if ((!tDestination->IsActive(bot, PlayerTravelInfo(bot)) || !IsConditionsActive()) && !forced) //Target has become invalid. Stop.
     {
+        ai->TellDebug(ai->GetMaster(), "The target is cooling down because the destination is no longer active or the conditions are no longer valid.", "debug travel");
         SetStatus(TravelStatus::TRAVEL_STATUS_COOLDOWN);
         return false;
     }
@@ -845,12 +864,14 @@ bool TravelTarget::IsTraveling() {
 
     if (HasArrived)
     {
+        ai->TellDebug(ai->GetMaster(), "The target is starting to work because the destination has been reached.", "debug travel");
         SetStatus(TravelStatus::TRAVEL_STATUS_WORK);
         return false;
     }
 
     if (!ai->HasStrategy("travel", BotState::BOT_STATE_NON_COMBAT) && !ai->HasStrategy("travel once", BotState::BOT_STATE_NON_COMBAT))
     {
+        ai->TellDebug(ai->GetMaster(), "The target is clearing because it was a travel once destination.", "debug travel");
         sTravelMgr.SetNullTravelTarget(this);
         return false;
     }
@@ -864,6 +885,7 @@ bool TravelTarget::IsWorking() {
 
     if (!tDestination->IsActive(bot, PlayerTravelInfo(bot)) || !IsConditionsActive()) //Target has become invalid. Stop.
     {
+        ai->TellDebug(ai->GetMaster(), "The target is cooling down because " + !tDestination->IsActive(bot, PlayerTravelInfo(bot)) ? "the destination is no longer active." : "the conditions are no longer valid.", "debug travel");
         SetStatus(TravelStatus::TRAVEL_STATUS_COOLDOWN);
         return false;
     }
@@ -872,6 +894,7 @@ bool TravelTarget::IsWorking() {
 
     if (!ai->HasStrategy("travel", BotState::BOT_STATE_NON_COMBAT) && !ai->HasStrategy("travel once", BotState::BOT_STATE_NON_COMBAT))
     {
+        ai->TellDebug(ai->GetMaster(), "The target is clearing because it was a travel once destination.", "debug travel");
         sTravelMgr.SetNullTravelTarget(this);
         return false;
     }
@@ -1341,6 +1364,8 @@ void TravelMgr::LoadQuestTravelTable()
     sPlayerbotAIConfig.openLog("activity_pid.csv", "w");
     sPlayerbotAIConfig.openLog("deaths.csv", "w");
     sPlayerbotAIConfig.openLog("player_paths.csv", "w");
+    sPlayerbotAIConfig.openLog("travel_destinations.csv", "w");
+    
 
     if (sPlayerbotAIConfig.hasLog("activity_pid.csv"))
     {
@@ -2064,6 +2089,36 @@ void TravelMgr::LoadQuestTravelTable()
         sRandomPlayerbotMgr.PrintTeleportCache();
     }
 
+    if (sPlayerbotAIConfig.hasLog("travel_destinations.csv"))
+    {
+        sLog.outString("Create travel destinations export.");
+
+        for (auto& [purpose, entryDestinations] : destinationMap)
+        {
+            for (auto& [entry, destinations] : entryDestinations)
+            {
+                for (auto& destination : destinations)
+                {
+                    std::ostringstream out;
+
+                    out << TravelDestinationPurposeName.at(purpose) << ",";
+                    out << entry << ",";
+                    out << destination->GetShortName() << ",";
+                    out << "\"" << destination->GetTitle() << "\",";
+                    out << destination->GetPoints().size() << ",";
+
+                    std::vector<WorldPosition> points;
+                    for (auto& point : destination->GetPoints())
+                        points.push_back(*point);
+
+                    WorldPosition().printWKT(points, out);
+
+                    sPlayerbotAIConfig.log("travel_destinations.csv", out.str().c_str());
+                }
+            }
+        }
+    }
+
 #ifndef MANGOSBOT_TWO    
     sTerrainMgr.Update(60 * 60 * 24);
 #else
@@ -2285,7 +2340,7 @@ float TravelMgr::MapTransDistance(const WorldPosition& start, const WorldPositio
     if (sMap == eMap)
         return start.distance(end);
 
-    float minDist = 200000;
+    float minDist = 9000000;
 
     auto mapTransfers = mapTransfersMap.find({ sMap, eMap });
     
@@ -2314,7 +2369,7 @@ float TravelMgr::FastMapTransDistance(const WorldPosition& start, const WorldPos
     if (sMap == eMap)
         return start.fDist(end);
 
-    float minDist = 200000;
+    float minDist = 9000000;
 
     auto mapTransfers = mapTransfersMap.find({ sMap, eMap });
 

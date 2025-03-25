@@ -46,7 +46,7 @@ void TravelStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
         {"",TravelDestinationPurpose::AH, 6.95f},                                                         //See isAllowed  90%
         {"",TravelDestinationPurpose::Vendor, 6.94f},                                                                   // 90%
         {"",TravelDestinationPurpose::Repair, 6.93f},                                                                   // 90%
-        {"val::and::{should get money,can get mail}", TravelDestinationPurpose::Mail, 6.79f},                           //100%
+        {"val::and::{should get money,can get mail,should get mail}", TravelDestinationPurpose::Mail, 6.79f},                           //100%
         {"val::should get money", TravelDestinationPurpose::Grind, 6.77f},                                              // 90%
         {"",TravelDestinationPurpose::Mail, 6.6f},                                                                      // 30%
         {"",TravelDestinationPurpose::GatherMining, 6.5f},                                                              // 90%/40% in group
@@ -77,7 +77,7 @@ void TravelStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
         {"val::should travel named::mount","request named travel target::mount", 6.86f},                                                // 25%
         {"val::should travel named::city","request named travel target::city", 6.85f},                                                  // 10%
         {"val::and::{has strategy::rpg quest,has focus travel target}","request quest travel target", 6.84f},                           //100%
-        //{"val::should travel named::pvp","request named travel target::pvp", 6.83f},                                                  // 25%
+        {"val::should travel named::pvp","request named travel target::pvp", 6.83f},                                                  // 25%
         {"val::and::{has strategy::rpg quest,should get money}", "request quest travel target", 6.78f},                                 // 90%
         {"val::not::travel target active","refresh travel target", 6.7f},                                                               // 90%
         {"val::should travel named::trainer trade","request named travel target::trainer trade", 6.51f},                                // 25%
@@ -103,6 +103,13 @@ void TravelStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
         "has nearby quest taker",
         NextAction::array(0, new NextAction("reset travel target", 6.99f), NULL)));
 
+    triggers.push_back(new TriggerNode(
+        "val::travel target traveling",
+        NextAction::array(0, new NextAction("check mount state", 1), new NextAction("move to travel target", 1), NULL)));
+}
+
+void TravelOnceStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
+{   
     triggers.push_back(new TriggerNode(
         "val::travel target traveling",
         NextAction::array(0, new NextAction("check mount state", 1), new NextAction("move to travel target", 1), NULL)));

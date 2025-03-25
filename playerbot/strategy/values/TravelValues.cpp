@@ -238,19 +238,19 @@ bool NeedTravelPurposeValue::Calculate()
     switch (purpose)
     {
     case TravelDestinationPurpose::Repair:
-        if (AI_VALUE2(bool, "group or", "should repair,can repair,following party,near leader"))
+        if (AI_VALUE2(bool, "group or", "should repair,can repair,following party"))
             return true;
         if (AI_VALUE2(bool, "has strategy", "free") && AI_VALUE(bool, "should repair") && AI_VALUE(bool, "can repair"))
             return true;
         break;
     case TravelDestinationPurpose::Vendor:
-        if (AI_VALUE2(bool, "group or", "should sell,can sell,following party,near leader"))
+        if (AI_VALUE2(bool, "group or", "should sell,can sell,following party"))
             return true;
         if (AI_VALUE2(bool, "has strategy", "free") && AI_VALUE(bool, "should sell") && AI_VALUE(bool, "can sell"))
             return true;
         break;
     case TravelDestinationPurpose::AH:
-        if (AI_VALUE2(bool, "group or", "should ah sell,can ah sell,following party,near leader"))
+        if (AI_VALUE2(bool, "group or", "should ah sell,can ah sell,following party"))
             return true;
         if (AI_VALUE2(bool, "has strategy", "free") && AI_VALUE(bool, "should ah sell") && AI_VALUE(bool, "can ah sell"))
             return true;
@@ -269,13 +269,27 @@ bool NeedTravelPurposeValue::Calculate()
     case TravelDestinationPurpose::Boss:
         return AI_VALUE(bool, "can fight boss");
     case TravelDestinationPurpose::Mail:
-        return AI_VALUE(bool, "can get mail");
+        return AI_VALUE(bool, "can get mail") && AI_VALUE(bool, "should get mail");
     case TravelDestinationPurpose::Explore:
         return ai->HasStrategy("explore", BotState::BOT_STATE_NON_COMBAT);    
     case TravelDestinationPurpose::GenericRpg:
-        return true;
+    {
+        uint32 rpgPhase = ai->GetFixedBotNumber(BotTypeNumber::RPG_PHASE_NUMBER, 60, 1);
+
+        if (rpgPhase < 15) //Only last 45 minutes of the hour allow generic rpg.
+            return false;
+
+        return !AI_VALUE2(bool, "manual bool", "is travel refresh");
+    }
     case TravelDestinationPurpose::Grind:
-        return true;
+    {
+        uint32 rpgPhase = ai->GetFixedBotNumber(BotTypeNumber::RPG_PHASE_NUMBER, 60, 1);
+
+        if (rpgPhase > 45) //Only first 45 minutes of the hour allow generic rpg.
+            return false;
+
+        return !AI_VALUE2(bool, "manual bool", "is travel refresh");
+    }
     default:
         return false;
     }
@@ -297,11 +311,32 @@ bool ShouldTravelNamedValue::Calculate()
         if (!botPos.isOverworld())
             return false;
 
+        uint32 rpgPhase = ai->GetFixedBotNumber(BotTypeNumber::RPG_PHASE_NUMBER, 60, 1);
+
+        if (rpgPhase > 20) //Only first 20 minutes of the hour allow generic city pvp without reason.
+            return false;
+
+        if (AI_VALUE2(bool, "manual bool", "is travel refresh"))
+            return false;
+
         return true;
     }
     else if (name == "pvp")
     {
         if (bot->GetLevel() <= 50)
+            return false;
+
+        int32 rpgStyle = AI_VALUE2(int32, "manual saved int", "rpg style override");
+
+        if (rpgStyle < 0)
+            rpgStyle = ai->GetFixedBotNumber(BotTypeNumber::RPG_STYLE_NUMBER, 100);
+
+        if (rpgStyle > 10) //Only 10% of the bots like to go to world-pvp.
+            return false;
+
+        uint32 rpgPhase = ai->GetFixedBotNumber(BotTypeNumber::RPG_PHASE_NUMBER, 60, 1);
+
+        if (rpgPhase > 15) //Only first 15 minutes of the hour allow generic rpg.
             return false;
 
         if (!botPos.isOverworld())
@@ -391,7 +426,7 @@ bool QuestStageActiveValue::Calculate()
     }
 
     if(objective)
-        if (!AI_VALUE2(bool, "need quest objective", objective - 1))
+        if (!AI_VALUE2(bool, "need quest objective", "{" + std::to_string(questId) + "," + std::to_string(objective - 1) + "}"))
             return false;
 
     return true;
