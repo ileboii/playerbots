@@ -62,6 +62,7 @@
 #include "ShareQuestAction.h"
 #include "UpdateGearAction.h"
 #include "SetAvoidAreaAction.h"
+#include "GlyphAction.h"
 
 #include "OnyxiasLairDungeonActions.h"
 #include "MoltenCoreDungeonActions.h"
@@ -272,6 +273,9 @@ namespace ai
             creators["rpg enchant"] = &ActionContext::rpg_enchant;
             creators["rpg duel"] = &ActionContext::rpg_duel;
             creators["rpg item"] = &ActionContext::rpg_item;
+
+            creators["set glyph"] = [](PlayerbotAI* ai) { return new SetGlyphAction(ai); };
+            creators["auto set glyph"] = [](PlayerbotAI* ai) { return new AutoSetGlyphAction(ai); };
 
             // Bot States
             creators["set combat state"] = &ActionContext::set_combat_state;
