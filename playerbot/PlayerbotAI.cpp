@@ -6205,18 +6205,26 @@ std::string PlayerbotAI::HandleRemoteCommand(std::string command)
         std::ostringstream out;
 
         TravelTarget* target = GetAiObjectContext()->GetValue<TravelTarget*>("travel target")->Get();
+
+        if (target->GetGroupmember() && target->GetGroupmember().GetPlayer())
+            out << target->GetGroupmember().GetPlayer()->GetName() << "'s ";
+
         if (target->GetDestination()) {
             out << "Target: " << target->GetDestination()->GetTitle();
 
-            if (target->GetPosition())
+            if (*target->GetPosition())
             {
                 out << "\nLocation: " << target->GetPosition()->getAreaName();
                 out << " (" << (uint32)target->GetPosition()->distance(bot) << "y)";
             }
         }
-        out << "\nStatus: ";
+        
         if (target->GetStatus() == TravelStatus::TRAVEL_STATUS_NONE)
-            out << "none";
+            return out.str();
+        
+        out << "\nStatus: ";
+        if (target->GetStatus() == TravelStatus::TRAVEL_STATUS_READY)
+            out << "ready";        
         else if (target->GetStatus() == TravelStatus::TRAVEL_STATUS_PREPARE)
             out << "preparing";
         else if (target->GetStatus() == TravelStatus::TRAVEL_STATUS_TRAVEL)
@@ -6234,76 +6242,71 @@ std::string PlayerbotAI::HandleRemoteCommand(std::string command)
         if(target->GetRetryCount(true) || target->GetRetryCount(false))
             out << "(retry " << target->GetRetryCount(true) << "/" << target->GetRetryCount(false) << ")";
 
-        out << "\nConditions: ";
-
-        for (auto& condition : target->GetConditions())
+        if (target->GetConditions().size())
         {
-            AiObjectContext* context = GetAiObjectContext();
-            out << condition;
-            if (AI_VALUE(bool, condition))
-                out << " (true)";
-            else
-                out << " (false)";
+            out << "\nConditions: ";
 
-            if (condition != target->GetConditions().back())
-                out << ", ";
+            for (auto& condition : target->GetConditions())
+            {
+                AiObjectContext* context = GetAiObjectContext();
+                out << condition;
+                if (AI_VALUE(bool, condition))
+                    out << " (true)";
+                else
+                    out << " (false)";
+
+                if (condition != target->GetConditions().back())
+                    out << ", ";
+            }
         }
 
         return out.str();
     }
-    else if (command == "budget")
+    else if (command.find("budget") == 0)
     {
+        std::string sub;
+
+        if (command.size() > 7)
+            sub = command.substr(7);
+
         std::ostringstream out;
 
         AiObjectContext* context = GetAiObjectContext();
 
-        out << "Current money: " << ChatHelper::formatMoney(bot->GetMoney()) << " free to use:" << ChatHelper::formatMoney(AI_VALUE2(uint32, "free money for", (uint32)NeedMoneyFor::anything)) << "\n";
-        out << "Purpose | Available / Needed \n";
+        if (sub.empty())
+        {
+            out << "Current money: " << ChatHelper::formatMoney(bot->GetMoney()) << " free to use:" << ChatHelper::formatMoney(AI_VALUE2(uint32, "free money for", (uint32)NeedMoneyFor::anything)) << "\n";
+            out << "Purpose: Needed | Available\n";
+        }
 
         for (uint32 i = 1; i < (uint32)NeedMoneyFor::anything; i++)
         {
             NeedMoneyFor needMoneyFor = NeedMoneyFor(i);
 
-            switch (needMoneyFor)
-            {
-            case NeedMoneyFor::none:
-                out << "nothing";
-                break;
-            case NeedMoneyFor::repair:
-                out << "repair";
-                break;
-            case NeedMoneyFor::ammo:
-                out << "ammo";
-                break;
-            case NeedMoneyFor::spells:
-                out << "spells";
-                break;
-            case NeedMoneyFor::travel:
-                out << "travel";
-                break;
-            case NeedMoneyFor::consumables:
-                out << "consumables";
-                break;
-            case NeedMoneyFor::gear:
-                out << "gear";
-                break;
-            case NeedMoneyFor::guild:
-                out << "guild";
-                break;
-            case NeedMoneyFor::tradeskill:
-                out << "tradeskill";
-                break;
-            case NeedMoneyFor::ah:
-                out << "ah";
-                break;
-            case NeedMoneyFor::mount:
-                out << "mount";
-                break;
-            case NeedMoneyFor::anything:
-                out << "anything";
-                break;
-            }
-            out << " | " << ChatHelper::formatMoney(AI_VALUE2(uint32, "free money for", i)) << " / " << ChatHelper::formatMoney(AI_VALUE2(uint32, "money needed for", i)) << "\n";
+            std::unordered_map<NeedMoneyFor, std::string> needStrMap =
+            { { NeedMoneyFor::none, "nothing"},
+              { NeedMoneyFor::repair, "repair"},
+              { NeedMoneyFor::ammo, "ammo"},
+              { NeedMoneyFor::spells, "spells"},
+              { NeedMoneyFor::travel, "travel"},
+              { NeedMoneyFor::consumables, "consumables"},
+              { NeedMoneyFor::gear, "gear"},
+              { NeedMoneyFor::guild, "guild"},
+              { NeedMoneyFor::tradeskill, "tradeskill"},
+              { NeedMoneyFor::skilltraining, "skilltraining"},
+              { NeedMoneyFor::ah, "ah"},
+              { NeedMoneyFor::mount, "mount"},
+              { NeedMoneyFor::anything, "anything"}};
+
+            if (!sub.empty() && needStrMap.at(needMoneyFor).find(sub) == std::string::npos)
+                continue;
+
+            out <<  needStrMap.at(needMoneyFor);
+
+            out << ": " << ChatHelper::formatMoney(AI_VALUE2(uint32, "money needed for", i)) << " | " << ChatHelper::formatMoney(AI_VALUE2(uint32, "free money for", i));
+
+            if (i != (uint32)NeedMoneyFor::mount)
+                out << "\n";
         }
 
         return out.str();
