@@ -12,7 +12,7 @@ public:
     {
         creators["earthliving weapon"] = &earthliving_weapon;
         creators["mana tide totem"] = &mana_tide_totem;
-        creators["flametongue totem"] = &flametongue_totem;
+        creators["searing totem"] = &searing_totem;
         creators["magma totem"] = &magma_totem;
         creators["strength of earth totem"] = &strength_of_earth_totem;
         creators["wrath of air totem"] = &wrath_of_air_totem;
@@ -28,7 +28,7 @@ private:
 
     ACTION_NODE_A(mana_tide_totem, "mana tide totem", "mana potion");
 
-    ACTION_NODE_A(flametongue_totem, "flametongue totem", "searing totem");
+    ACTION_NODE_A(searing_totem, "searing totem", "flametongue totem");
 
     ACTION_NODE_C(magma_totem, "magma totem", "fire nova");
 
@@ -366,7 +366,7 @@ void RestorationShamanTotemsStrategy::InitCombatTriggers(std::list<TriggerNode*>
 
     triggers.push_back(new TriggerNode(
         "fire totem",
-        NextAction::array(0, new NextAction("flametongue totem", ACTION_HIGH), NULL)));
+        NextAction::array(0, new NextAction("searing totem", ACTION_HIGH), NULL)));
 }
 
 void RestorationShamanTotemsStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)

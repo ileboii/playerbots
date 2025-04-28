@@ -1,5 +1,6 @@
 
 #include "playerbot/playerbot.h"
+#include "ShamanMultipliers.h"
 #include "ElementalShamanStrategy.h"
 
 using namespace ai;
@@ -10,16 +11,16 @@ public:
     ElementalShamanStrategyActionNodeFactory()
     {
         creators["totem of wrath"] = &totem_of_wrath;
-        creators["magma totem"] = &magma_totem;
+        creators["searing totem"] = &searing_totem;
         creators["strength of earth totem"] = &strength_of_earth_totem;
         creators["wrath of air totem"] = &wrath_of_air_totem;
         creators["mana spring totem"] = &mana_spring_totem;
     }
 
 private:
-    ACTION_NODE_A(totem_of_wrath, "totem of wrath", "flametongue totem");
+    ACTION_NODE_A(totem_of_wrath, "totem of wrath", "searing totem");
 
-    ACTION_NODE_A(magma_totem, "magma totem", "fire nova");
+    ACTION_NODE_A(searing_totem, "searing totem", "flametongue totem");
 
     ACTION_NODE_A(strength_of_earth_totem, "strength of earth totem", "stoneskin totem");
 
@@ -309,7 +310,7 @@ void ElementalShamanTotemsStrategy::InitCombatTriggers(std::list<TriggerNode*>& 
 
     triggers.push_back(new TriggerNode(
         "fire totem aoe",
-        NextAction::array(0, new NextAction("magma totem", ACTION_HIGH), NULL)));
+        NextAction::array(0, new NextAction("searing totem", ACTION_HIGH), NULL)));
 
     triggers.push_back(new TriggerNode(
         "fire totem",
@@ -733,7 +734,7 @@ void ElementalShamanTotemsStrategy::InitCombatTriggers(std::list<TriggerNode*>& 
 
     triggers.push_back(new TriggerNode(
         "fire totem aoe",
-        NextAction::array(0, new NextAction("magma totem", ACTION_HIGH), NULL)));
+        NextAction::array(0, new NextAction("searing totem", ACTION_HIGH), NULL)));
 
     triggers.push_back(new TriggerNode(
         "fire totem",
