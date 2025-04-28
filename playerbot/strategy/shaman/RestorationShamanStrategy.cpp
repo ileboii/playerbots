@@ -34,7 +34,7 @@ private:
 
     ACTION_NODE_A(strength_of_earth_totem, "strength of earth totem", "stoneskin totem");
 
-    ACTION_NODE_A(wrath_of_air_totem, "wrath of air totem", "windfury totem");
+    ACTION_NODE_A(wrath_of_air_totem, "wrath of air totem", "grace of air totem");
 
     ACTION_NODE_A(healing_stream_totem, "healing stream totem", "mana spring totem");
 
