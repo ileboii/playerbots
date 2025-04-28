@@ -10,6 +10,7 @@ class ElementalShamanStrategyActionNodeFactory : public NamedObjectFactory<Actio
 public:
     ElementalShamanStrategyActionNodeFactory()
     {
+        creators["flametongue weapon"] = &flametongue_weapon;
         creators["totem of wrath"] = &totem_of_wrath;
         creators["searing totem"] = &searing_totem;
         creators["strength of earth totem"] = &strength_of_earth_totem;
@@ -18,6 +19,8 @@ public:
     }
 
 private:
+    ACTION_NODE_A(flametongue_weapon, "flametongue weapon", "windfury weapon");
+
     ACTION_NODE_A(totem_of_wrath, "totem of wrath", "searing totem");
 
     ACTION_NODE_A(searing_totem, "searing totem", "flametongue totem");
@@ -310,7 +313,7 @@ void ElementalShamanTotemsStrategy::InitCombatTriggers(std::list<TriggerNode*>& 
 
     triggers.push_back(new TriggerNode(
         "fire totem aoe",
-        NextAction::array(0, new NextAction("searing totem", ACTION_HIGH), NULL)));
+        NextAction::array(0, new NextAction("magma totem", ACTION_HIGH), NULL)));
 
     triggers.push_back(new TriggerNode(
         "fire totem",
