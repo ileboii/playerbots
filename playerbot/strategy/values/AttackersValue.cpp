@@ -374,6 +374,16 @@ bool AttackersValue::IsValid(Unit* target, Player* player, Player* owner, bool c
         if (checkInCombat && !InCombat(target, player, (player == owner)))
         {
             return false;
+            bool isRtiTarget = false;
+            if (player->GetPlayerbotAI() && player->GetPlayerbotAI()->HasActivePlayerMaster())
+            {
+                Unit* rtiTarget = PAI_VALUE(Unit*, "rti target");
+                if (target == rtiTarget)
+                    isRtiTarget = true;
+            }
+
+            if(!isRtiTarget)
+                return false;
         }
 
         // If the target is a player's pet and in a PvP prohibited zone
