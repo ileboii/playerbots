@@ -2,7 +2,7 @@
 #include "playerbot/playerbot.h"
 #include "ShamanMultipliers.h"
 #include "EnhancementShamanStrategy.h"
-#include <playerbot/PlayerbotFactory.cpp>
+#include <playerbot/strategy/AiObject.h>
 
 using namespace ai;
 
@@ -309,7 +309,7 @@ void EnhancementShamanTotemsStrategy::InitCombatTriggers(std::list<TriggerNode*>
 {
     ShamanTotemsStrategy::InitCombatTriggers(triggers);
 
-    if (bot->GetGroup())
+    if (ai->GetBot()->GetGroup())
     {
         triggers.push_back(new TriggerNode(
             "air totem",
@@ -750,7 +750,7 @@ void EnhancementShamanTotemsStrategy::InitCombatTriggers(std::list<TriggerNode*>
 {
     ShamanTotemsStrategy::InitCombatTriggers(triggers);
 
-    if (bot->GetGroup())
+    if (ai->GetBot()->GetGroup())
     {
         triggers.push_back(new TriggerNode(
             "air totem",
@@ -1191,7 +1191,7 @@ void EnhancementShamanTotemsStrategy::InitCombatTriggers(std::list<TriggerNode*>
 {
     ShamanTotemsStrategy::InitCombatTriggers(triggers);
 
-    if (bot->GetGroup())
+    if (ai->GetBot()->GetGroup())
     {
         triggers.push_back(new TriggerNode(
             "air totem",
