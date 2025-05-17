@@ -59,7 +59,7 @@ bool ImbueWithStoneAction::isUseful()
         for (GroupReference* ref = group->GetFirstMember(); ref; ref = ref->next())
         {
             Player* member = ref->getSource();
-            if (!member || member == bot || !member->IsInWorld())
+            if (!member || member == bot || !member->IsInWorld() || !group->SameSubGroup(bot, member))
                 continue;
 
             if (member->getClass() == CLASS_SHAMAN && member->GetLevel() > 32)
