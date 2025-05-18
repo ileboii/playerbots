@@ -369,6 +369,8 @@ namespace ai
             return true;
         }
 
+        bool Execute(Event& event) override
+        {
             // Pick a poison item
             uint32 poisonLevel = 0;
             uint32 poisonItemId = 0;
