@@ -349,7 +349,7 @@ namespace ai
         , mainHand(inMainHand)
         , poisonItemIds(inPoisonItemIds) {}
 
-        bool Execute(Event& event) override
+        bool IsUseful()
         {
             // No poison if grouped with shaman +32 lvl
             if (bot->GetGroup())
@@ -358,7 +358,7 @@ namespace ai
                 for (GroupReference* ref = group->GetFirstMember(); ref; ref = ref->next())
                 {
                     Player* member = ref->getSource();
-                    if (!member || member == bot || !member->IsInWorld() || !group->SameSubGroup(bot, member))
+                    if (!member || member == bot || !group->SameSubGroup(bot, member))
                         continue;
 
                     if (member->getClass() == CLASS_SHAMAN && member->GetLevel() > 32)
