@@ -43,7 +43,8 @@ bool CastCustomSpellAction::Execute(Event& event)
 
     Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
 
-    // Process summon request
+    // Process 
+    // request
     if (CastSummonPlayer(requester, text))
     {
         return true;
@@ -380,7 +381,16 @@ bool CastCustomSpellAction::CastSummonPlayer(Player* requester, std::string comm
                         }
                         else
                         {
-                            target->TeleportTo(bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), bot->GetOrientation());
+                            if (target->GetMapId() != bot->GetMapId())
+                            {
+                                target->GetMotionMaster()->Clear();
+                                target->TeleportTo(bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), bot->GetOrientation());
+                            }
+                            else
+                            {
+                                target->TeleportTo(bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), bot->GetOrientation());
+                            }
+
                             if (target->isRealPlayer())
                                 target->SendHeartBeat();
                         }
