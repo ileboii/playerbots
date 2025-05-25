@@ -344,7 +344,7 @@ bool CastCustomSpellAction::CastSummonPlayer(Player* requester, std::string comm
                                 for (Group::member_citerator itr = groupSlot.begin(); itr != groupSlot.end(); itr++)
                                 {
                                     Player* member = sObjectMgr.GetPlayer(itr->guid);
-                                    if (member && ai->IsSafe(member))
+                                    if (member)
                                     {
                                         if (itr->guid == targetGuid)
                                         {
