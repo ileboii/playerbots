@@ -20,15 +20,37 @@ bool ImbueWithStoneAction::Execute(Event& event)
     if (bot->getStandState() != UNIT_STAND_STATE_STAND)
         bot->SetStandState(UNIT_STAND_STATE_STAND);
 
-    // Search and apply stone to weapons
-    // Mainhand
-    Item* mainWeapon = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
-    if (mainWeapon && mainWeapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) == 0)
+    // Check if shaman +30 lvl
+    bool canImbueMainhand = true;
+    if (bot->getClass() == CLASS_SHAMAN && bot->GetLevel() > 30)
+        canImbueMainhand = false;
+
+    if (bot->GetGroup())
     {
-        Item* stone = ai->FindStoneFor(mainWeapon);
-        if (stone)
+        Group* group = bot->GetGroup();
+        for (GroupReference* ref = group->GetFirstMember(); ref; ref = ref->next())
         {
-            return UseItem(requester, stone->GetEntry(), mainWeapon);
+            Player* member = ref->getSource();
+            if (!member || member == bot || !member->IsInWorld() || !group->SameSubGroup(bot, member))
+                continue;
+
+            if (member->getClass() == CLASS_SHAMAN && member->GetLevel() > 32)
+            {
+                canImbueMainhand = false;
+                break;
+            }
+        }
+    }
+
+    // Mainhand
+    if (canImbueMainhand)
+    {
+        Item* mainWeapon = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
+        if (mainWeapon && mainWeapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) == 0)
+        {
+            Item* stone = ai->FindStoneFor(mainWeapon);
+            if (stone)
+                return UseItem(requester, stone->GetEntry(), mainWeapon);
         }
     }
 
@@ -38,9 +60,7 @@ bool ImbueWithStoneAction::Execute(Event& event)
     {
         Item* stone = ai->FindStoneFor(secondaryWeapon);
         if (stone)
-        {
             return UseItem(requester, stone->GetEntry(), secondaryWeapon);
-        }
     }
 
     return false;
@@ -48,39 +68,45 @@ bool ImbueWithStoneAction::Execute(Event& event)
 
 bool ImbueWithStoneAction::isUseful()
 {
-    // Skip if bot is a shaman above level 30
+    bool allowMainhand = true;
+
     if (bot->getClass() == CLASS_SHAMAN && bot->GetLevel() > 30)
-        return false;
+        allowMainhand = false;
 
-    // Mainhand (with group logic)
-    Item* mainWeapon = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
-    if (mainWeapon && mainWeapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) == 0)
+    if (bot->GetGroup())
     {
-        // Check if +32 shaman in group
-        if (bot->GetGroup())
+        Group* group = bot->GetGroup();
+        for (GroupReference* ref = group->GetFirstMember(); ref; ref = ref->next())
         {
-            Group* group = bot->GetGroup();
-            for (GroupReference* ref = group->GetFirstMember(); ref; ref = ref->next())
-            {
-                Player* member = ref->getSource();
-                if (!member || member == bot || !member->IsInWorld() || !group->SameSubGroup(bot, member))
-                    continue;
+            Player* member = ref->getSource();
+            if (!member || member == bot || !member->IsInWorld() || !group->SameSubGroup(bot, member))
+                continue;
 
-                if (member->getClass() == CLASS_SHAMAN && member->GetLevel() > 32)
-                    return false;
+            if (member->getClass() == CLASS_SHAMAN && member->GetLevel() > 32)
+            {
+                allowMainhand = false;
+                break;
             }
         }
-
-        if (ai->FindStoneFor(mainWeapon))
-            return true;
     }
 
-    // Offhand
+    // Check Offhand always
     Item* secondaryWeapon = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND);
     if (secondaryWeapon && secondaryWeapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) == 0)
     {
         if (ai->FindStoneFor(secondaryWeapon))
             return true;
+    }
+
+    // Check Mainhand
+    if (allowMainhand)
+    {
+        Item* mainWeapon = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
+        if (mainWeapon && mainWeapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) == 0)
+        {
+            if (ai->FindStoneFor(mainWeapon))
+                return true;
+        }
     }
 
     return false;
