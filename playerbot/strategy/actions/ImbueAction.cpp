@@ -20,7 +20,8 @@ bool ImbueWithStoneAction::Execute(Event& event)
     if (bot->getStandState() != UNIT_STAND_STATE_STAND)
         bot->SetStandState(UNIT_STAND_STATE_STAND);
 
-    // Check if shaman +30 lvl
+#ifndef MANGOSBOT_TWO
+    // Check if shaman +30 lvl (non-WOTLK)
     bool canImbueMainhand = true;
     if (bot->getClass() == CLASS_SHAMAN && bot->GetLevel() > 30)
         canImbueMainhand = false;
@@ -41,6 +42,7 @@ bool ImbueWithStoneAction::Execute(Event& event)
             }
         }
     }
+#endif
 
     // Mainhand
     if (canImbueMainhand)
