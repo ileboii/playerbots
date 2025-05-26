@@ -624,7 +624,6 @@ bool CastRandomSpellAction::castSpell(uint32 spellId, WorldObject* wo, Player* r
     {
         SetDuration(spellDuration);
     } 
-    }    
     return executed;
 }
 
