@@ -178,7 +178,7 @@ namespace ai
 
         virtual bool isUseful() override
         {
-            return (!bot->GetGroup() || ai->HasStrategy("wrath of air totem", BotState::BOT_STATE_COMBAT)) && CastTotemAction::isUseful();
+            return (!bot->GetGroup() || ai->HasStrategy("totem air wrath", BotState::BOT_STATE_COMBAT)) && CastTotemAction::isUseful();
         }
 	};
 
@@ -238,7 +238,7 @@ namespace ai
 
         virtual bool isUseful() override
         {
-            return (bot->GetGroup() || ai->HasStrategy("windfury totem", BotState::BOT_STATE_COMBAT)) && CastTotemAction::isUseful();
+            return (bot->GetGroup() || ai->HasStrategy("totem air windfury", BotState::BOT_STATE_COMBAT)) && CastTotemAction::isUseful();
         }
     };
 
@@ -255,7 +255,7 @@ namespace ai
 
         virtual bool isUseful() override
         {
-            return (!bot->GetGroup() || ai->HasStrategy("grace of air totem", BotState::BOT_STATE_COMBAT)) && CastTotemAction::isUseful();
+            return (!bot->GetGroup() || ai->HasStrategy("totem air grace", BotState::BOT_STATE_COMBAT)) && CastTotemAction::isUseful();
         }
     };
 
