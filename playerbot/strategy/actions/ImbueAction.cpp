@@ -48,34 +48,31 @@ bool ImbueWithStoneAction::Execute(Event& event)
 
 bool ImbueWithStoneAction::isUseful()
 {
-    // No stone if shaman +30 lvl
+    // Skip if bot is a shaman above level 30
     if (bot->getClass() == CLASS_SHAMAN && bot->GetLevel() > 30)
         return false;
 
-    // No stone if grouped with shaman +32 lvl
-    if (bot->GetGroup())
-    {
-        Group* group = bot->GetGroup();
-        for (GroupReference* ref = group->GetFirstMember(); ref; ref = ref->next())
-        {
-            Player* member = ref->getSource();
-            if (!member || member == bot || !member->IsInWorld() || !group->SameSubGroup(bot, member))
-                continue;
-
-            if (member->getClass() == CLASS_SHAMAN && member->GetLevel() > 32)
-                return false;
-        }
-    }
-
-    // Search and apply stone to weapons
-    // Mainhand
+    // Mainhand (with group logic)
     Item* mainWeapon = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
     if (mainWeapon && mainWeapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) == 0)
     {
-        if (ai->FindStoneFor(mainWeapon))
+        // Check if +32 shaman in group
+        if (bot->GetGroup())
         {
-            return true;
+            Group* group = bot->GetGroup();
+            for (GroupReference* ref = group->GetFirstMember(); ref; ref = ref->next())
+            {
+                Player* member = ref->getSource();
+                if (!member || member == bot || !member->IsInWorld() || !group->SameSubGroup(bot, member))
+                    continue;
+
+                if (member->getClass() == CLASS_SHAMAN && member->GetLevel() > 32)
+                    return false;
+            }
         }
+
+        if (ai->FindStoneFor(mainWeapon))
+            return true;
     }
 
     // Offhand
@@ -83,9 +80,7 @@ bool ImbueWithStoneAction::isUseful()
     if (secondaryWeapon && secondaryWeapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) == 0)
     {
         if (ai->FindStoneFor(secondaryWeapon))
-        {
             return true;
-        }
     }
 
     return false;
