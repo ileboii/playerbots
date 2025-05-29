@@ -24,9 +24,9 @@ bool ImbueWithStoneAction::Execute(Event& event)
 
 #ifndef MANGOSBOT_TWO
     // Check if shaman +30 lvl (non-WOTLK)
-    bool canImbueMainhand = true;
+
     if (bot->getClass() == CLASS_SHAMAN && bot->GetLevel() > 30)
-        canImbueMainhand = false;
+        allowMainhand = false;
 
     if (bot->GetGroup())
     {
@@ -104,8 +104,7 @@ bool ImbueWithStoneAction::isUseful()
             return true;
     }
 
-    // Check Mainhand
-
+    // Check mainhand only if allowed
     if (allowMainhand)
     {
         Item* mainWeapon = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
