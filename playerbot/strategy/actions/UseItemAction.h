@@ -445,6 +445,7 @@ namespace ai
 
         virtual uint32 GetItemId() override
         {
+#ifdef MANGOSBOT_TWO
             if (bot->GetSkillValue(129) >= 400)
                 return 34722;
             if (bot->GetSkillValue(129) >= 350)
@@ -453,6 +454,13 @@ namespace ai
                 return 21991;
             if (bot->GetSkillValue(129) >= 300)
                 return 21990;
+#endif
+#ifdef MANGOSBOT_ONE
+            if (bot->GetSkillValue(129) >= 325)
+                return 21991;
+            if (bot->GetSkillValue(129) >= 300)
+                return 21990;
+#endif
             if (bot->GetSkillValue(129) >= 225)
                 return 14530;
             if (bot->GetSkillValue(129) >= 200)
