@@ -44,7 +44,7 @@ bool ImbueWithStoneAction::Execute(Event& event)
             }
         }
     }
-
+#endif
     // Mainhand
     if (allowMainhand)
     {
