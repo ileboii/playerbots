@@ -49,7 +49,7 @@ bool ImbueWithStoneAction::Execute(Event& event)
     if (allowMainhand)
     {
         Item* mainWeapon = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
-        if (mainWeapon && mainWeapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) == 0)
+        if (mainWeapon && mainWeapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) == 0 && bot->GetLevel() <= 70)
         {
             Item* stone = ai->FindStoneFor(mainWeapon);
             if (stone)
@@ -59,7 +59,7 @@ bool ImbueWithStoneAction::Execute(Event& event)
 
     // Offhand
     Item* secondaryWeapon = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND);
-    if (secondaryWeapon && secondaryWeapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) == 0)
+    if (secondaryWeapon && secondaryWeapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) == 0 && bot->GetLevel() <= 70)
     {
         Item* stone = ai->FindStoneFor(secondaryWeapon);
         if (stone)
@@ -98,7 +98,7 @@ bool ImbueWithStoneAction::isUseful()
 
     // Check Offhand always
     Item* secondaryWeapon = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND);
-    if (secondaryWeapon && secondaryWeapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) == 0)
+    if (secondaryWeapon && secondaryWeapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) == 0 && bot->GetLevel() <= 70)
     {
         if (ai->FindStoneFor(secondaryWeapon))
             return true;
@@ -108,7 +108,7 @@ bool ImbueWithStoneAction::isUseful()
     if (allowMainhand)
     {
         Item* mainWeapon = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
-        if (mainWeapon && mainWeapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) == 0)
+        if (mainWeapon && mainWeapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) == 0 && bot->GetLevel() <= 70)
         {
             if (ai->FindStoneFor(mainWeapon))
                 return true;
@@ -134,7 +134,7 @@ bool ImbueWithOilAction::Execute(Event& event)
 
     // Search and apply oil to weapons
     Item* weapon = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
-    if (weapon && weapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) == 0)
+    if (weapon && weapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) == 0 && bot->GetLevel() <= 70)
     {
         Item* oil = ai->FindOilFor(weapon);
         if (oil)
@@ -149,7 +149,7 @@ bool ImbueWithOilAction::Execute(Event& event)
 bool ImbueWithOilAction::isUseful()
 {
     Item* weapon = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
-    if (weapon && weapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) == 0)
+    if (weapon && weapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) == 0 && bot->GetLevel() <= 70)
     {
         if (ai->FindOilFor(weapon))
         {
