@@ -445,6 +445,7 @@ namespace ai
 
         virtual uint32 GetItemId() override
         {
+            int firstAidSkillValue = bot->GetSkillValue(129);
 #ifdef MANGOSBOT_TWO
             if (firstAidSkillValue >= 400)
                 return 34722;
