@@ -2746,6 +2746,9 @@ void PlayerbotFactory::InitSkills()
         SetRandomSkill(SKILL_CROSSBOWS);
         SetRandomSkill(SKILL_FIST_WEAPONS);
         SetRandomSkill(SKILL_THROWN);
+#ifdef MANGOSBOT_TWO
+        SetRandomSkill(SKILL_AXES);
+#endif
         break;
 #ifdef MANGOSBOT_TWO
     case CLASS_DEATH_KNIGHT:
