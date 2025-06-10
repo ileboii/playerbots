@@ -417,7 +417,7 @@ ItemUsage ItemUsageValue::Calculate()
             if (proto->Stackable)
                 maxSellPrice *= proto->Stackable;
 
-            uint32 minimumSellPrice = bot->GetMoney() / 100;
+            uint32 minimumSellPrice = bot->GetMoney() / 2000;
 
             if (maxSellPrice < minimumSellPrice) //Do not loot items less than 0.1% of bot's gold per stack. 
                 sellUsage = ItemUsage::ITEM_USAGE_NONE;
