@@ -465,9 +465,6 @@ bool CheckMountStateAction::Mount(Player* requester, bool limitSpeedToGroup)
         if (sServerFacade.isMoving(bot))
         {
             ai->StopMoving();
-            SetDuration(1000U); // ss
-            return true;
-
         }
 
         bool didMount = false;
