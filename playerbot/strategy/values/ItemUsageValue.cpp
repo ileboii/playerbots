@@ -447,7 +447,7 @@ ItemUsage ItemUsageValue::Calculate()
             return sellUsage; //It costs more to AH then sell.
 
         if (ahPrice - depositCost - sellPrice < bot->GetMoney() / 500)
-            return sellUsage; //Do not move to AH for items with less than 1% of bots gold markup.
+            return sellUsage; //Do not move to AH for items with less than 0.2% of bots gold markup.
 
         if(depositCost > ahMoney && AI_VALUE(uint8, "bag space") > 80) 
             return sellUsage; //We simply do not have the money to put this on AH.
