@@ -420,7 +420,8 @@ bool DebugAction::Execute(Event& event)
 
         if (dest)
         {
-            WorldPosition* point = dest->GetNextPoint(botPos);
+            std::list<uint8> chancesToGoFar = { 10,50,90 }; //Closest map, grid, cell.
+            WorldPosition* point = dest->GetNextPoint(botPos, chancesToGoFar);
             if (point)
             {
                 poiPoint = *point;
@@ -1092,11 +1093,14 @@ bool DebugAction::Execute(Event& event)
         rep[REP_REVERED] = "revered";
         rep[REP_EXALTED] = "exalted";
 
-        ReputationRank reactionRequest = PlayerbotAI::GetFactionReaction(requestFaction, objectFaction);
-        ReputationRank reactionHum = PlayerbotAI::GetFactionReaction(humanFaction, objectFaction);
-        ReputationRank reactionOrc = PlayerbotAI::GetFactionReaction(orcFaction, objectFaction);
+        if (objectFaction)
+        {
+            ReputationRank reactionRequest = PlayerbotAI::GetFactionReaction(requestFaction, objectFaction);
+            ReputationRank reactionHum = PlayerbotAI::GetFactionReaction(humanFaction, objectFaction);
+            ReputationRank reactionOrc = PlayerbotAI::GetFactionReaction(orcFaction, objectFaction);
 
-        out2 << " faction:" << guidP.GetGameObjectInfo()->faction << " reaction me: "  << rep[reactionRequest] << ",alliance: "<< rep[reactionHum] << " ,horde: "<< rep[reactionOrc];
+            out2 << " faction:" << guidP.GetGameObjectInfo()->faction << " reaction me: " << rep[reactionRequest] << ",alliance: " << rep[reactionHum] << " ,horde: " << rep[reactionOrc];
+        }
 
         ai->TellPlayerNoFacing(requester, out2);
 
@@ -1201,7 +1205,8 @@ bool DebugAction::Execute(Event& event)
 
         if (dest)
         {
-            WorldPosition* point = dest->GetNextPoint(botPos);
+            std::list<uint8> chancesToGoFar = { 10,50,90 }; //Closest map, grid, cell.
+            WorldPosition* point = dest->GetNextPoint(botPos, chancesToGoFar);
 
             if (!point)
                 return false;

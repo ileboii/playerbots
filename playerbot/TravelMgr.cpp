@@ -488,36 +488,6 @@ bool ExploreTravelDestination::IsActive(Player* bot, const PlayerTravelInfo& inf
     return !(currFields & val);    
 }
 
-
-bool FishTravelDestination::IsPossible(const PlayerTravelInfo& info) const
-{
-    uint16 skillValue = info.GetCurrentSkill((SkillType)SKILL_FISHING);
-    if (!skillValue) //Can not fish.
-        return false;
-
-    if (info.GetSkillMax((SkillType)SKILL_FISHING) <= skillValue) //Not able to increase skill.
-        return false;
-
-    int32 zone_skill = sObjectMgr.GetFishingBaseSkillLevel(GetEntry());    
-
-    if (!zone_skill) //no fishable zone or area should be 0
-        return false;
-
-    if (skillValue + 5 >= zone_skill) //There is some chance for success.
-        return false;
-
-    return true;
-}
-
-bool FishTravelDestination::IsActive(Player* bot, const PlayerTravelInfo& info) const
-{
-    if (!IsPossible(info))
-        return false;    
-    bot->UpdateFishingSkill();
-    return true;
-}
-
-
 bool GrindTravelDestination::IsPossible(const PlayerTravelInfo& info) const
 {
     if (info.GetBoolValue("should sell") && (info.GetBoolValue("can sell") || info.GetBoolValue("can ah sell")))
@@ -660,7 +630,19 @@ bool GatherTravelDestination::IsPossible(const PlayerTravelInfo& info) const
     uint32 skillId = SKILL_NONE;
     uint32 reqSkillValue = 0;
 
-    if (GetEntry() > 0)
+    if (GetPurpose() == TravelDestinationPurpose::GatherFishing)
+    {
+        skillId = SKILL_FISHING;
+
+        int32 reqSkillValue = sObjectMgr.GetFishingBaseSkillLevel(GetEntry());
+
+        if (!reqSkillValue) //no fishable zone or area should be 0
+            return false;
+
+        if (reqSkillValue > 5)
+            reqSkillValue -= 5; //Give chance to levelup.
+    }
+    else if (GetEntry() > 0)
     {
         CreatureInfo const* cInfo = GetCreatureInfo();
 
@@ -702,13 +684,10 @@ bool GatherTravelDestination::IsPossible(const PlayerTravelInfo& info) const
     if (reqSkillValue > skillValue)
         return false;
 
-    if (info.GetLevel() * 5 <= skillValue) //Not able to increase skill.
-        return false;
-
     if (info.GetSkillMax((SkillType)skillId) <= skillValue) //Not able to increase skill.
         return false;
 
-    if (reqSkillValue + 100 < skillValue) //Gray level = no skillup
+    if (GetPurpose() != TravelDestinationPurpose::GatherFishing && reqSkillValue + 100 < skillValue) //Gray level = no skillup
         return false;
 
     return true;
@@ -722,26 +701,30 @@ bool GatherTravelDestination::IsActive(Player* bot, const PlayerTravelInfo& info
     if (!IsPossible(info))
         return false;   
 
-    if (!IsOut(bot))
+
+    if (GetPurpose() != TravelDestinationPurpose::GatherFishing)
     {
-        if (this->GetEntry() > 0)
+        if (!IsOut(bot))
         {
-            std::list<ObjectGuid> targets = AI_VALUE(std::list<ObjectGuid>, "possible targets");
+            if (this->GetEntry() > 0)
+            {
+                std::list<ObjectGuid> targets = AI_VALUE(std::list<ObjectGuid>, "possible targets");
 
-            for (auto& target : targets)
-                if (target.GetEntry() == GetEntry() && target.IsCreature() && ai->GetCreature(target) && ai->GetCreature(target)->IsAlive())
-                    return true;
+                for (auto& target : targets)
+                    if (target.GetEntry() == GetEntry() && target.IsCreature() && ai->GetCreature(target) && ai->GetCreature(target)->IsAlive())
+                        return true;
+            }
+            else
+            {
+                std::list<ObjectGuid> targets = AI_VALUE(std::list<ObjectGuid>, "nearest game objects no los");
+
+                for (auto& target : targets)
+                    if (target.GetEntry() == GetEntry())
+                        return true;
+            }
+
+            return false;
         }
-        else
-        {
-            std::list<ObjectGuid> targets = AI_VALUE(std::list<ObjectGuid>, "nearest game objects no los");
-
-            for (auto& target : targets)
-                if (target.GetEntry() == GetEntry())
-                    return true;
-        }
-
-        return false;
     }
 
     return true;
@@ -2115,8 +2098,9 @@ void TravelMgr::LoadQuestTravelTable()
                     out << destination->GetShortName() << ",";
                     out << "\"" << destination->GetTitle() << "\",";
                     out << destination->GetSize() << ",";
-                    out << "\"GEOMETRYCOLLECTION(";
-                    destination->printWKT(out);
+                    out << "\"MultiPoint(";
+                    destination->printWKT(out, false);
+                    out.seekp(-1, out.cur);
                     out << ")\"";
                     sPlayerbotAIConfig.log("travel_destinations.csv", out.str().c_str());
                 }
@@ -2184,11 +2168,13 @@ uint32 TravelMgr::GetFishZone(const AsyncGuidPosition& pos) const
 
     TerrainManager::GetZoneAndAreaIdByAreaFlag(zone, subzone, areaFlag, pos.getMapId());
 
-    int32 zone_skill = sObjectMgr.GetFishingBaseSkillLevel(subzone);
-    if (zone_skill)
+    if (sObjectMgr.GetFishingBaseSkillLevel(subzone))
         return subzone;
 
-    return zone;
+    if (sObjectMgr.GetFishingBaseSkillLevel(zone))
+        return zone;
+
+    return 0;
 }
 
 void TravelMgr::LoadFishLocations()
@@ -2229,6 +2215,9 @@ void TravelMgr::LoadFishLocations()
         point->setAreaFlag(areaFlag);
         uint32 zone = GetFishZone(*point);
 
+        if (!zone)
+            continue;
+
         TravelDestination* dest = AddDestination<GatherTravelDestination>(zone, TravelDestinationPurpose::GatherFishing);                
 
         dest->AddPoint(point);
@@ -2248,7 +2237,7 @@ void TravelMgr::GetFishLocations()
 
     std::vector<std::future<void>> calculations;
 
-    for (uint32 mapId = 0; mapId < 1000; mapId++)
+    for (int32 mapId = 1000; mapId >= 0; mapId--)
     {       
         bool hashFishing = false;
         for (uint32 i = 0; i < sAreaStore.GetNumRows(); ++i)    // areaflag numbered from 0
@@ -2276,8 +2265,6 @@ void TravelMgr::GetFishLocations()
         bar.step();
     }
 
-    std::reverse(calculations.begin(), calculations.end());
-
     BarGoLink bar1(calculations.size());   
 
     for (uint32 i = 0; i < calculations.size(); i++)
@@ -2289,6 +2276,8 @@ void TravelMgr::GetFishLocations()
 
 void TravelMgr::GetFishLocations(uint32 mapId)
 {
+    PathFinder path(mapId,0);
+
     const int8 subCellPerGrid = 64;
     const float sizeOfSubCell = SIZE_OF_GRIDS / subCellPerGrid;
 
@@ -2333,6 +2322,14 @@ void TravelMgr::GetFishLocations(uint32 mapId)
                         if (fabs(fishSpot.getZ() - waterSpot.getZ()) > 10.0f)
                             continue;
 
+                        uint32 area = path.getArea(mapId, fishSpot.getX(), fishSpot.getY(), fishSpot.getZ());
+
+                        if (!area || area == NAV_AREA_GROUND_STEEP)
+                        {
+                        //    sLog.outError("no area %d %f %f %f", mapId, fishSpot.getX(), fishSpot.getY(), fishSpot.getZ());
+                            continue;
+                        }
+                   
                         inWater = fishSpot.isInWater();
 
                         if (!inWater)
@@ -2347,6 +2344,9 @@ void TravelMgr::GetFishLocations(uint32 mapId)
 
                     fishPos.FetchArea();
                     uint32 zone = GetFishZone(fishPos);
+
+                    if (!zone)
+                        continue;
 
                     fishSpots[zone].push_back(fishPos);                    
                 }
@@ -2424,6 +2424,9 @@ DestinationList TravelMgr::GetDestinations(const PlayerTravelInfo& info, uint32 
                     continue;
 
                 if (maxDistance > 0 && dest->DistanceTo(center) > maxDistance)
+                    continue;
+
+                if (dest->DistanceTo(center) == FLT_MAX) //Do not return destinations on maps you can't path to.
                     continue;
                 
                 retDests.push_back(dest);
@@ -2514,6 +2517,9 @@ PartitionedTravelList TravelMgr::GetPartitions(const WorldPosition& center, cons
                 continue;
 
             float distance = position->distance(center);
+
+            if (distance > maxDistance)
+                continue;
             
             point = TravelPoint(dest, position, distance);
         }
