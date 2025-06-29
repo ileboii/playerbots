@@ -1193,6 +1193,9 @@ bool UseHearthStoneAction::isUseful()
     if (bot->IsFlying() && WorldPosition(bot).currentHeight() > 10.0f)
         return false;
 
+    if (!bot->HasItemCount(6948, 1))
+        return false;
+
     return true;
 }
 

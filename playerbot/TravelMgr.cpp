@@ -733,9 +733,16 @@ bool GatherTravelDestination::IsActive(Player* bot, const PlayerTravelInfo& info
 std::string GatherTravelDestination::GetTitle() const {
     std::ostringstream out;
 
-    out << "gathering node ";
+    if (GetPurpose() == TravelDestinationPurpose::GatherFishing)
+    {
+        out << "fishing spot ";
+    }
+    else
+    {        
+        out << "gathering node ";
 
-    out << ChatHelper::formatWorldEntry(GetEntry());
+        out << ChatHelper::formatWorldEntry(GetEntry());
+    }
 
     return out.str();
 }
@@ -2400,6 +2407,17 @@ void TravelMgr::SaveFishLocations()
     }
 
     WorldDatabase.CommitTransaction();
+}
+
+WorldPosition* TravelMgr::GetFishSpot(WorldPosition start, bool onlyNearestGrid)
+{
+    //0% Different map, 25% different grid, 25% different cell, 100% different point (inside cell)
+    std::list<uint8> chances = { 0, 25, 25, 100 };
+
+    if (onlyNearestGrid)
+        chances = { 0, 0, 0, 100 };
+
+    return fishMap.GetNextPoint(start, chances);
 }
 
 DestinationList TravelMgr::GetDestinations(const PlayerTravelInfo& info, uint32 purposeFlag, const std::vector<int32>& entries, bool onlyPossible, float maxDistance) const

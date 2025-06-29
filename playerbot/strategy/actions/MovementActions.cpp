@@ -363,7 +363,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
     {
         movePosition = endPosition;
 
-        if (startPosition.getMapId() != endPosition.getMapId() || totalDistance > maxDist)
+        if (startPosition.getMapId() != endPosition.getMapId() || totalDistance > maxDist || (startPosition.getMapId() == 609 && fabs(startPosition.getZ() - endPosition.getZ()) > 20.0f))
         {
             if (!sTravelNodeMap.getNodes().empty() && !bot->InBattleGround())
             {
@@ -692,6 +692,9 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
 
         if (pathType == TravelNodePathType::flightPath && entry)
         {
+            if (ai->HandleSpellClick(entry)) //Source gryphon of ebonhold.
+                return true;
+
             TaxiPathEntry const* tEntry = sTaxiPathStore.LookupEntry(entry);
 
             if (tEntry)
@@ -720,6 +723,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
                 }
 #ifdef MANGOSBOT_TWO                
                 bot->OnTaxiFlightEject(true);
+                ai->Unmount();
 #endif
                 bool goTaxi = bot->ActivateTaxiPathTo({ tEntry->from, tEntry->to }, unit, 1);
 #ifdef MANGOSBOT_TWO
