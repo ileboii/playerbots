@@ -803,6 +803,31 @@ bool RandomJumpTrigger::IsActive()
     return bot->IsInWorld() && ai->HasPlayerNearby() && !ai->IsJumping() && frand(0.0f, 1.0f) < sPlayerbotAIConfig.jumpRandomChance;
 }
 
+bool RpgSpellClickTrigger::IsActive()
+{
+    GuidPosition guidP(getGuidP());
+
+#ifdef MANGOSBOT_TWO
+    if (!guidP.IsCreatureOrVehicle())
+        return false;
+
+    switch(guidP.GetEntry())
+    {
+    case 29488: //Scourge gryphon
+    case 29501:
+        return false;
+    }
+
+    if (TransportInfo* transportInfo = bot->GetTransportInfo())
+    {
+        if (transportInfo && transportInfo->IsOnVehicle())
+            return false;
+    }
+#endif   
+
+    return ai->CanSpellClick(guidP);
+}
+
 bool RpgGossipTalkTrigger::IsActive()
 {
     GuidPosition guidP(getGuidP());
@@ -818,6 +843,14 @@ bool RpgGossipTalkTrigger::IsActive()
 
     if (!creature)
         return false;
+
+#ifdef MANGOSBOT_TWO
+    switch (guidP.GetEntry())
+    {
+    case 28653: //Salanar the Horseman
+        return AI_VALUE2(bool, "need quest objective", "12687,0"); //Only when we need "Into the Realm of Shadows"
+    }
+#endif
 
     if (!sScriptDevAIMgr.OnGossipHello(bot, creature))
     {
