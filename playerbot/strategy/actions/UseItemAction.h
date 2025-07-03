@@ -599,6 +599,16 @@ namespace ai
             if (!bot->HasMana())
                 return false;
 
+            if (bot->GetMaster() && (!bot->IsWithinDist(bot->GetMaster(), 30.0f) && bot->IsWithinDist(bot->GetMaster(), 1000.0f)))
+            {
+                // Master is too far, stop eating
+                bot->RemoveAurasDueToSpell(24005);
+                bot->clearUnitState(UNIT_STAND_STATE_SIT);
+                bot->addUnitState(UNIT_STAND_STATE_STAND);
+                bot->GetMotionMaster()->Clear();
+                return false;
+            }
+
             if (ai->HasCheat(BotCheatMask::item))
             {
                 if (bot->IsNonMeleeSpellCasted(true))
@@ -635,16 +645,6 @@ namespace ai
                 ai->CastSpell(24355, bot);
                 SetDuration(drinkDuration);
                 bot->RemoveSpellCooldown(*pSpellInfo);
-
-                if (bot->GetMaster() && (!bot->IsWithinDist(bot->GetMaster(), 30.0f) && bot->IsWithinDist(bot->GetMaster(), 1000.0f)))
-                {
-                    // Master is too far, stop eating
-                    bot->RemoveAurasDueToSpell(24005);
-                    bot->clearUnitState(UNIT_STAND_STATE_SIT);
-                    bot->addUnitState(UNIT_STAND_STATE_STAND);
-                    bot->GetMotionMaster()->Clear();
-                    return false;
-                }
 
                 // Eat and drink at the same time
 
@@ -688,6 +688,16 @@ namespace ai
             if (sServerFacade.IsInCombat(bot))
                 return false;
 
+            if (bot->GetMaster() && (!bot->IsWithinDist(bot->GetMaster(), 30.0f) && bot->IsWithinDist(bot->GetMaster(), 1000.0f)))
+            {
+                // Master is too far, stop drinking
+                bot->RemoveAurasDueToSpell(24355);
+                bot->clearUnitState(UNIT_STAND_STATE_SIT);
+                bot->addUnitState(UNIT_STAND_STATE_STAND);
+                bot->GetMotionMaster()->Clear();
+                return false;
+            }
+
             if (ai->HasCheat(BotCheatMask::item))
             {
                 if (bot->IsNonMeleeSpellCasted(true))
@@ -724,16 +734,6 @@ namespace ai
                 ai->CastSpell(24005, bot);
                 SetDuration(eatDuration);
                 bot->RemoveSpellCooldown(*pSpellInfo);
-
-                if (bot->GetMaster() && (!bot->IsWithinDist(bot->GetMaster(), 30.0f) && bot->IsWithinDist(bot->GetMaster(), 1000.0f)))
-                {
-                    // Master is too far, stop drinking
-                    bot->RemoveAurasDueToSpell(24355);
-                    bot->clearUnitState(UNIT_STAND_STATE_SIT);
-                    bot->addUnitState(UNIT_STAND_STATE_STAND);
-                    bot->GetMotionMaster()->Clear();
-                    return false;
-                }
 
                 // Eat and drink at the same time
                 if (bot->HasMana() && AI_VALUE2(uint8, "mana", "self target") < 85 && 
