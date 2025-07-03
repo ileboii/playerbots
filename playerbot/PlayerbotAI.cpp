@@ -465,6 +465,7 @@ void PlayerbotAI::UpdateAI(uint32 elapsed, bool minimal)
         if (HasCheat(BotCheatMask::movespeed))
         {
             bot->UpdateSpeed(MOVE_WALK, true, 10);
+            
             bot->UpdateSpeed(MOVE_RUN, true, 10);
             bot->UpdateSpeed(MOVE_SWIM, true, 10);
         }
