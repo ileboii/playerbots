@@ -601,8 +601,8 @@ namespace ai
 
             if (bot->GetMaster() && (!bot->IsWithinDist(bot->GetMaster(), 30.0f) && bot->IsWithinDist(bot->GetMaster(), 1000.0f)))
             {
-                // Master is too far, stop eating
-                bot->RemoveAurasDueToSpell(24005);
+                // Master is too far, stop drinking
+                bot->RemoveAurasDueToSpell(24355);
                 bot->clearUnitState(UNIT_STAND_STATE_SIT);
                 bot->addUnitState(UNIT_STAND_STATE_STAND);
                 bot->GetMotionMaster()->Clear();
@@ -688,10 +688,11 @@ namespace ai
             if (sServerFacade.IsInCombat(bot))
                 return false;
 
+
             if (bot->GetMaster() && (!bot->IsWithinDist(bot->GetMaster(), 30.0f) && bot->IsWithinDist(bot->GetMaster(), 1000.0f)))
             {
-                // Master is too far, stop drinking
-                bot->RemoveAurasDueToSpell(24355);
+                // Master is too far, stop eating
+                bot->RemoveAurasDueToSpell(24005);
                 bot->clearUnitState(UNIT_STAND_STATE_SIT);
                 bot->addUnitState(UNIT_STAND_STATE_STAND);
                 bot->GetMotionMaster()->Clear();
