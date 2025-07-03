@@ -688,7 +688,6 @@ namespace ai
             if (sServerFacade.IsInCombat(bot))
                 return false;
 
-
             if (bot->GetMaster() && (!bot->IsWithinDist(bot->GetMaster(), 30.0f) && bot->IsWithinDist(bot->GetMaster(), 1000.0f)))
             {
                 // Master is too far, stop eating
