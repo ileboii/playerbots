@@ -603,6 +603,7 @@ namespace ai
             {
                 // Master is too far, stop drinking
                 bot->RemoveAurasDueToSpell(24355);
+                ai->InterruptSpell();
                 bot->clearUnitState(UNIT_STAND_STATE_SIT);
                 bot->addUnitState(UNIT_STAND_STATE_STAND);
                 bot->GetMotionMaster()->Clear();
@@ -692,6 +693,7 @@ namespace ai
             {
                 // Master is too far, stop eating
                 bot->RemoveAurasDueToSpell(24005);
+                ai->InterruptSpell();
                 bot->clearUnitState(UNIT_STAND_STATE_SIT);
                 bot->addUnitState(UNIT_STAND_STATE_STAND);
                 bot->GetMotionMaster()->Clear();
