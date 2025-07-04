@@ -140,4 +140,18 @@ namespace ai
         CanFightBossValue(PlayerbotAI* ai) : BoolCalculatedValue(ai, "can fight boss") {}
         virtual bool Calculate() { return bot->GetGroup() && bot->GetGroup()->GetMembersCount() > 3 && AI_VALUE2(bool, "group and", "can fight equal") && AI_VALUE2(bool, "group and", "following party") && !AI_VALUE2(bool, "group or", "should sell,can sell"); };
     };        
+
+    class ShouldDrinkValue : public BoolCalculatedValue
+    {
+    public:
+        ShouldDrinkValue(PlayerbotAI* ai) : BoolCalculatedValue(ai, "should drink", 2) {}
+        virtual bool Calculate() { return !bot->GetMaster() || (bot->IsWithinDist(bot->GetMaster(), 30.0f) && !bot->IsWithinDist(bot->GetMaster(), 1000.0f)); };
+    };
+
+    class ShouldEatValue : public BoolCalculatedValue
+    {
+    public:
+        ShouldEatValue(PlayerbotAI* ai) : BoolCalculatedValue(ai, "should eat", 2) {}
+        virtual bool Calculate() { return !bot->GetMaster() || (bot->IsWithinDist(bot->GetMaster(), 30.0f) && !bot->IsWithinDist(bot->GetMaster(), 1000.0f)); };
+    };
 }

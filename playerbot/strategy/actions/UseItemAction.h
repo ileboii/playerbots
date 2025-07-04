@@ -599,17 +599,6 @@ namespace ai
             if (!bot->HasMana())
                 return false;
 
-            if (bot->GetMaster() && (!bot->IsWithinDist(bot->GetMaster(), 30.0f) && bot->IsWithinDist(bot->GetMaster(), 1000.0f)))
-            {
-                // Master is too far, stop drinking
-                bot->RemoveAurasDueToSpell(24355);
-                ai->InterruptSpell();
-                bot->clearUnitState(UNIT_STAND_STATE_SIT);
-                bot->addUnitState(UNIT_STAND_STATE_STAND);
-                bot->GetMotionMaster()->Clear();
-                return false;
-            }
-
             if (ai->HasCheat(BotCheatMask::item))
             {
                 if (bot->IsNonMeleeSpellCasted(true))
@@ -635,7 +624,11 @@ namespace ai
 
                 const float mpMissingPct = 100.0f - bot->GetPowerPercent();
                 const float multiplier = bot->InBattleGround() ? 20000.0f : 27000.0f;
-                const float drinkDuration = multiplier * (mpMissingPct / 100.0f);
+                float drinkDuration = multiplier * (mpMissingPct / 100.0f);
+                if (bot->GetMaster() && !bot->IsWithinDist(bot->GetMaster(), 20.0f))
+                {
+                    drinkDuration *= 0.5f;
+                }
 
                 const SpellEntry* pSpellInfo = sServerFacade.LookupSpellInfo(24355);
                 if (!pSpellInfo)
@@ -650,7 +643,7 @@ namespace ai
                 // Eat and drink at the same time
 
                 if (AI_VALUE2(uint8, "health", "self target") < sPlayerbotAIConfig.lowHealth && 
-                    (!bot->GetMaster() || (bot->IsWithinDist(bot->GetMaster(), 30.0f) && !bot->IsWithinDist(bot->GetMaster(), 1000.0f))))
+                    AI_VALUE(bool, "should eat"))
                 {
                     const SpellEntry* pSpellInfo2 = sServerFacade.LookupSpellInfo(24005);
                     if (pSpellInfo2)
@@ -670,7 +663,7 @@ namespace ai
         {
             return UseAction::isUseful() && bot->HasMana() && 
                 AI_VALUE2(uint8, "mana", "self target") < 85 && 
-                (!bot->GetMaster() || (bot->IsWithinDist(bot->GetMaster(), 30.0f) && !bot->IsWithinDist(bot->GetMaster(), 1000.0f)));
+                AI_VALUE(bool, "should drink");
         }
 
         bool isPossible() override
@@ -688,17 +681,6 @@ namespace ai
         {
             if (sServerFacade.IsInCombat(bot))
                 return false;
-
-            if (bot->GetMaster() && (!bot->IsWithinDist(bot->GetMaster(), 30.0f) && bot->IsWithinDist(bot->GetMaster(), 1000.0f)))
-            {
-                // Master is too far, stop eating
-                bot->RemoveAurasDueToSpell(24005);
-                ai->InterruptSpell();
-                bot->clearUnitState(UNIT_STAND_STATE_SIT);
-                bot->addUnitState(UNIT_STAND_STATE_STAND);
-                bot->GetMotionMaster()->Clear();
-                return false;
-            }
 
             if (ai->HasCheat(BotCheatMask::item))
             {
@@ -725,7 +707,11 @@ namespace ai
 
                 const float hpMissingPct = 100.0f - bot->GetHealthPercent();
                 const float multiplier = bot->InBattleGround() ? 20000.0f : 27000.0f;
-                const float eatDuration = multiplier * (hpMissingPct / 100.0f);
+                float eatDuration = multiplier * (hpMissingPct / 100.0f);
+                if (bot->GetMaster() && !bot->IsWithinDist(bot->GetMaster(), 20.0f))
+                {
+                    eatDuration *= 0.5f;
+                }
 
                 const SpellEntry* pSpellInfo = sServerFacade.LookupSpellInfo(24005);
                 if (!pSpellInfo)
@@ -739,7 +725,7 @@ namespace ai
 
                 // Eat and drink at the same time
                 if (bot->HasMana() && AI_VALUE2(uint8, "mana", "self target") < 85 && 
-                    (!bot->GetMaster() || (bot->IsWithinDist(bot->GetMaster(), 30.0f) && !bot->IsWithinDist(bot->GetMaster(), 1000.0f))))
+                    AI_VALUE(bool, "should drink"))
                 {
                     const SpellEntry* pSpellInfo2 = sServerFacade.LookupSpellInfo(24355);
                     if (pSpellInfo2)
@@ -759,7 +745,7 @@ namespace ai
         {
             return UseAction::isUseful() && 
                 (AI_VALUE2(uint8, "health", "self target")) < sPlayerbotAIConfig.lowHealth && 
-                (!bot->GetMaster() || (bot->IsWithinDist(bot->GetMaster(), 30.0f) && !bot->IsWithinDist(bot->GetMaster(), 1000.0f)));
+                AI_VALUE(bool, "should eat");
         }
 
         bool isPossible() override
