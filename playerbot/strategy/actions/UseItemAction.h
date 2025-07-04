@@ -627,7 +627,7 @@ namespace ai
                 float drinkDuration = multiplier * (mpMissingPct / 100.0f);
                 Player* master = ai->GetMaster();
                 if (master && 
-                    (!bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMinRange) || (master->IsMoving() && !bot->IsWithinDist(master, 5.0f))))
+                    (!bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMinDistance) || (master->IsMoving() && !bot->IsWithinDist(master, 5.0f))))
                 {
                     float masterOrientation = master->GetOrientation();
                     float angleToBot = master->GetAngle(bot);
@@ -718,7 +718,7 @@ namespace ai
                 float eatDuration = multiplier * (hpMissingPct / 100.0f);
                 Player* master = ai->GetMaster();
                 if (master && 
-                    (!bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMinRange) || (master->IsMoving() && !bot->IsWithinDist(master, 5.0f))))
+                    (!bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMinDistance) || (master->IsMoving() && !bot->IsWithinDist(master, 5.0f))))
                 {
                     float masterOrientation = master->GetOrientation();
                     float angleToBot = master->GetAngle(bot);

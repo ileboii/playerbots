@@ -151,10 +151,10 @@ namespace ai
             if (!master)
                 return true;
 
-            if (!bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMaxRange))
+            if (!bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMaxDistance))
                 return true;
 
-            if (!bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMinRange) && master->IsMoving())
+            if (!bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMinDistance) && master->IsMoving())
                 return false;
 
             return true;
@@ -171,10 +171,10 @@ namespace ai
             if (!master)
                 return true;
 
-            if (!bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMaxRange))
+            if (!bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMaxDistance))
                 return true;
 
-            if (!bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMinRange) && master->IsMoving())
+            if (!bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMinDistance) && master->IsMoving())
                 return false;
 
             return true;
