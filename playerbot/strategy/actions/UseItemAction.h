@@ -625,9 +625,17 @@ namespace ai
                 const float mpMissingPct = 100.0f - bot->GetPowerPercent();
                 const float multiplier = bot->InBattleGround() ? 20000.0f : 27000.0f;
                 float drinkDuration = multiplier * (mpMissingPct / 100.0f);
-                if (bot->GetMaster() && !bot->IsWithinDist(bot->GetMaster(), 20.0f))
+                Player* master = ai->GetMaster();
+                if (master && 
+                    (!bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMinRange) || (master->IsMoving() && !bot->IsWithinDist(master, 5.0f))))
                 {
-                    drinkDuration *= 0.5f;
+                    float masterOrientation = master->GetOrientation();
+                    float angleToBot = master->GetAngle(bot);
+                    float angleDiff = fabs(masterOrientation - angleToBot);
+                    if (angleDiff > M_PI / 2 && angleDiff < 3 * M_PI / 2)
+                    {
+                        drinkDuration *= 0.25f;
+                    }
                 }
 
                 const SpellEntry* pSpellInfo = sServerFacade.LookupSpellInfo(24355);
@@ -708,9 +716,17 @@ namespace ai
                 const float hpMissingPct = 100.0f - bot->GetHealthPercent();
                 const float multiplier = bot->InBattleGround() ? 20000.0f : 27000.0f;
                 float eatDuration = multiplier * (hpMissingPct / 100.0f);
-                if (bot->GetMaster() && !bot->IsWithinDist(bot->GetMaster(), 20.0f))
+                Player* master = ai->GetMaster();
+                if (master && 
+                    (!bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMinRange) || (master->IsMoving() && !bot->IsWithinDist(master, 5.0f))))
                 {
-                    eatDuration *= 0.5f;
+                    float masterOrientation = master->GetOrientation();
+                    float angleToBot = master->GetAngle(bot);
+                    float angleDiff = fabs(masterOrientation - angleToBot);
+                    if (angleDiff > M_PI / 2 && angleDiff < 3 * M_PI / 2)
+                    {
+                        eatDuration *= 0.25f;
+                    }
                 }
 
                 const SpellEntry* pSpellInfo = sServerFacade.LookupSpellInfo(24005);

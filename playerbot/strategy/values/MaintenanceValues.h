@@ -145,13 +145,39 @@ namespace ai
     {
     public:
         ShouldDrinkValue(PlayerbotAI* ai) : BoolCalculatedValue(ai, "should drink", 2) {}
-        virtual bool Calculate() { return !bot->GetMaster() || (bot->IsWithinDist(bot->GetMaster(), 30.0f) && !bot->IsWithinDist(bot->GetMaster(), 1000.0f)); };
+        virtual bool Calculate()
+        {
+            Player* master = ai->GetMaster();
+            if (!master)
+                return true;
+
+            if (!bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMaxRange))
+                return true;
+
+            if (!bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMinRange) && master->IsMoving())
+                return false;
+
+            return true;
+        }
     };
 
     class ShouldEatValue : public BoolCalculatedValue
     {
     public:
         ShouldEatValue(PlayerbotAI* ai) : BoolCalculatedValue(ai, "should eat", 2) {}
-        virtual bool Calculate() { return !bot->GetMaster() || (bot->IsWithinDist(bot->GetMaster(), 30.0f) && !bot->IsWithinDist(bot->GetMaster(), 1000.0f)); };
+        virtual bool Calculate()
+        {
+            Player* master = ai->GetMaster();
+            if (!master)
+                return true;
+
+            if (!bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMaxRange))
+                return true;
+
+            if (!bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMinRange) && master->IsMoving())
+                return false;
+
+            return true;
+        }
     };
 }
