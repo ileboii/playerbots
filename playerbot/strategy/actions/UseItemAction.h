@@ -626,11 +626,13 @@ namespace ai
                 const float multiplier = bot->InBattleGround() ? 20000.0f : 27000.0f;
                 float drinkDuration = multiplier * (mpMissingPct / 100.0f);
                 Player* master = ai->GetMaster();
+
+                if (!master)
+                    return true;
+
                 if (master && 
-                    //5man group
                     (ai->HasStrategy("follow", BotState::BOT_STATE_NON_COMBAT) && bot->GetGroup() && (!bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMinDistance + sPlayerbotAIConfig.followDistance) || (master->IsMoving() && !bot->IsWithinDist(master, sPlayerbotAIConfig.followDistance)))) ||
-                    //Raid group
-                    (ai->HasStrategy("follow", BotState::BOT_STATE_NON_COMBAT) && bot->GetGroup()->IsRaidGroup() && (!bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMinDistance + sPlayerbotAIConfig.raidFollowDistance) || (master->IsMoving() && !bot->IsWithinDist(master, sPlayerbotAIConfig.raidFollowDistance)))))
+                    (ai->HasStrategy("follow", BotState::BOT_STATE_NON_COMBAT) && bot->GetGroup() && bot->GetGroup()->IsRaidGroup() && (!bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMinDistance + sPlayerbotAIConfig.raidFollowDistance) || (master->IsMoving() && !bot->IsWithinDist(master, sPlayerbotAIConfig.raidFollowDistance)))))
                 {
                     float masterOrientation = master->GetOrientation();
                     float angleToBot = master->GetAngle(bot);
@@ -720,11 +722,13 @@ namespace ai
                 const float multiplier = bot->InBattleGround() ? 20000.0f : 27000.0f;
                 float eatDuration = multiplier * (hpMissingPct / 100.0f);
                 Player* master = ai->GetMaster();
+
+                if (!master)
+                    return true;
+
                 if (master && 
-                    //5man group
                     (ai->HasStrategy("follow", BotState::BOT_STATE_NON_COMBAT) && bot->GetGroup() && (!bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMinDistance + sPlayerbotAIConfig.followDistance) || (master->IsMoving() && !bot->IsWithinDist(master, sPlayerbotAIConfig.followDistance)))) ||
-                    //Raid group
-                    (ai->HasStrategy("follow", BotState::BOT_STATE_NON_COMBAT) && bot->GetGroup()->IsRaidGroup() && (!bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMinDistance + sPlayerbotAIConfig.raidFollowDistance) || (master->IsMoving() && !bot->IsWithinDist(master, sPlayerbotAIConfig.raidFollowDistance)))))
+                    (ai->HasStrategy("follow", BotState::BOT_STATE_NON_COMBAT) && bot->GetGroup() && bot->GetGroup()->IsRaidGroup() && (!bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMinDistance + sPlayerbotAIConfig.raidFollowDistance) || (master->IsMoving() && !bot->IsWithinDist(master, sPlayerbotAIConfig.raidFollowDistance)))))
                 {
                     float masterOrientation = master->GetOrientation();
                     float angleToBot = master->GetAngle(bot);
