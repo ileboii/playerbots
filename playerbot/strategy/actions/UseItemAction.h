@@ -628,7 +628,7 @@ namespace ai
                 Player* master = ai->GetMaster();
                 if (master && 
                     //5man group
-                    (ai->HasStrategy("follow", BotState::BOT_STATE_NON_COMBAT) && bot->GetGroup() && (!bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMinDistance + sPlayerbotAIConfig.followDistance) || (master->IsMoving() && !bot->IsWithinDist(master, sPlayerbotAIConfig.followDistance)))) ||
+                    (ai->HasStrategy("follow", BotState::BOT_STATE_NON_COMBAT) && bot->GetGroup() && !bot->GetGroup()->IsRaidGroup() && (!bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMinDistance + sPlayerbotAIConfig.followDistance) || (master->IsMoving() && !bot->IsWithinDist(master, sPlayerbotAIConfig.followDistance)))) ||
                     //Raid group
                     (ai->HasStrategy("follow", BotState::BOT_STATE_NON_COMBAT) && bot->GetGroup()->IsRaidGroup() && (!bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMinDistance + sPlayerbotAIConfig.raidFollowDistance) || (master->IsMoving() && !bot->IsWithinDist(master, sPlayerbotAIConfig.raidFollowDistance)))))
                 {
@@ -722,7 +722,7 @@ namespace ai
                 Player* master = ai->GetMaster();
                 if (master && 
                     //5man group
-                    (ai->HasStrategy("follow", BotState::BOT_STATE_NON_COMBAT) && bot->GetGroup() && (!bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMinDistance + sPlayerbotAIConfig.followDistance) || (master->IsMoving() && !bot->IsWithinDist(master, sPlayerbotAIConfig.followDistance)))) ||
+                    (ai->HasStrategy("follow", BotState::BOT_STATE_NON_COMBAT) && bot->GetGroup() && !bot->GetGroup()->IsRaidGroup() && (!bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMinDistance + sPlayerbotAIConfig.followDistance) || (master->IsMoving() && !bot->IsWithinDist(master, sPlayerbotAIConfig.followDistance)))) ||
                     //Raid group
                     (ai->HasStrategy("follow", BotState::BOT_STATE_NON_COMBAT) && bot->GetGroup()->IsRaidGroup() && (!bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMinDistance + sPlayerbotAIConfig.raidFollowDistance) || (master->IsMoving() && !bot->IsWithinDist(master, sPlayerbotAIConfig.raidFollowDistance)))))
                 {

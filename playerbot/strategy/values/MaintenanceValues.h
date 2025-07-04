@@ -154,9 +154,10 @@ namespace ai
             if (ai->HasStrategy("follow", BotState::BOT_STATE_NON_COMBAT) && !bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMaxDistance))
                 return true;
 
-            if (ai->HasStrategy("follow", BotState::BOT_STATE_NON_COMBAT) && bot->GetGroup() && !bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMinDistance + sPlayerbotAIConfig.followDistance) && master->IsMoving())
+            //5man group
+            if (ai->HasStrategy("follow", BotState::BOT_STATE_NON_COMBAT) && bot->GetGroup() && !bot->GetGroup()->IsRaidGroup() && !bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMinDistance + sPlayerbotAIConfig.followDistance) && master->IsMoving())
                 return false;
-
+            //Raid group
             if (ai->HasStrategy("follow", BotState::BOT_STATE_NON_COMBAT) && bot->GetGroup()->IsRaidGroup() && !bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMinDistance + sPlayerbotAIConfig.raidFollowDistance) && master->IsMoving())
                 return false;
 
@@ -176,10 +177,10 @@ namespace ai
 
             if (ai->HasStrategy("follow", BotState::BOT_STATE_NON_COMBAT) && !bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMaxDistance + sPlayerbotAIConfig.followDistance))
                 return true;
-
-            if (ai->HasStrategy("follow", BotState::BOT_STATE_NON_COMBAT) && bot->GetGroup() && !bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMinDistance + sPlayerbotAIConfig.followDistance) && master->IsMoving())
+            //5man group
+            if (ai->HasStrategy("follow", BotState::BOT_STATE_NON_COMBAT) && bot->GetGroup() && !bot->GetGroup()->IsRaidGroup() && !bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMinDistance + sPlayerbotAIConfig.followDistance) && master->IsMoving())
                 return false;
-
+            //Raid group
             if (ai->HasStrategy("follow", BotState::BOT_STATE_NON_COMBAT) && bot->GetGroup()->IsRaidGroup() && !bot->IsWithinDist(master, sPlayerbotAIConfig.EatDrinkMinDistance + sPlayerbotAIConfig.raidFollowDistance) && master->IsMoving())
                 return false;
 
