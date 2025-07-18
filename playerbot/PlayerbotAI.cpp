@@ -320,16 +320,10 @@ void PlayerbotAI::UpdateAI(uint32 elapsed, bool minimal)
     }
 
 #ifdef MANGOSBOT_TWO
-    //Remove gryphon
-    if (!bot->IsMounted() && bot->GetMountID() && !bot->IsTaxiFlying())
-    {
-        Unmount();
-    }
-    //Remove bad mount.
-    if (bot->IsMounted() && !bot->IsTaxiFlying() && AI_VALUE2(uint32, "current mount speed", "self target") == 0)
-    {
-        Unmount();
-    }
+    if (bot->IsPendingDismount())
+        bot->ResolvePendingUnmount();
+    else
+        bot->ResolvePendingMount();
 #endif
 
     // wake up if in combat
@@ -870,10 +864,6 @@ bool PlayerbotAI::CanEnterArea(const AreaTrigger* area)
 
 void PlayerbotAI::Unmount()
 {
-#ifdef MANGOSBOT_TWO
-        bot->ResolvePendingMount();
-#endif
-
     if ((bot->IsMounted() || bot->GetMountID()) && !bot->IsTaxiFlying())
     {
         bot->RemoveSpellsCausingAura(SPELL_AURA_MOUNTED);
@@ -887,11 +877,6 @@ void PlayerbotAI::Unmount()
             bot->GetMotionMaster()->MoveFall();
         }
     }
-
-#ifdef MANGOSBOT_TWO
-    if(bot->IsPendingDismount())
-        bot->ResolvePendingUnmount();
-#endif
 }
 
 bool PlayerbotAI::IsStateActive(BotState state) const
@@ -1250,7 +1235,7 @@ void PlayerbotAI::Reset(bool full)
         target->SetStatus(TravelStatus::TRAVEL_STATUS_EXPIRED);
         target->SetExpireIn(1000);
 
-        RESET_AI_VALUE(FutureDestinations*, "future travel destinations");        
+        *AI_VALUE(FutureDestinations*, "future travel destinations") = FutureDestinations();
         RESET_AI_VALUE2(std::string, "manual string", "future travel purpose");
         RESET_AI_VALUE2(int, "manual int", "future travel relevance");
 
@@ -6278,6 +6263,48 @@ std::string PlayerbotAI::HandleRemoteCommand(std::string command)
 
         if (target->GetDestination()) {
             out << "Target: " << target->GetDestination()->GetTitle();
+        }
+
+        if (target->GetStatus() != TravelStatus::TRAVEL_STATUS_NONE)
+        {
+            out << "\nStatus: ";
+            if (target->GetStatus() == TravelStatus::TRAVEL_STATUS_READY)
+                out << "ready";
+            else if (target->GetStatus() == TravelStatus::TRAVEL_STATUS_PREPARE)
+                out << "preparing";
+            else if (target->GetStatus() == TravelStatus::TRAVEL_STATUS_TRAVEL)
+                out << (target->IsForced() ? "forced traveling" : "traveling");
+            else if (target->GetStatus() == TravelStatus::TRAVEL_STATUS_WORK)
+                out << "working";
+            else if (target->GetStatus() == TravelStatus::TRAVEL_STATUS_COOLDOWN)
+                out << "cooldown";
+            else if (target->GetStatus() == TravelStatus::TRAVEL_STATUS_EXPIRED)
+                out << "expired";
+
+            if (target->GetStatus() != TravelStatus::TRAVEL_STATUS_EXPIRED)
+                out << " [for " << (target->GetTimeLeft() / 1000) << "s]";
+
+            if (target->GetRetryCount(true) || target->GetRetryCount(false))
+                out << "(retry " << target->GetRetryCount(true) << "/" << target->GetRetryCount(false) << ")";           
+        }
+
+        return out.str();
+    }
+    else if (command == "traveldetail")
+    {
+        std::ostringstream out;
+
+        TravelTarget* target = GetAiObjectContext()->GetValue<TravelTarget*>("travel target")->Get();
+
+        if (target->GetGroupmember() && target->GetGroupmember().GetPlayer())
+            out << target->GetGroupmember().GetPlayer()->GetName() << "'s ";
+
+        if (target->GetDestination()) {
+            out << target->GetDestination()->GetShortName() << " travel target";
+
+            out << "\nTarget: " << target->GetDestination()->GetTitle();
+
+            out << "\nDistance " << round(target->GetDestination()->DistanceTo(bot)) << "y";
 
             if (*target->GetPosition())
             {
@@ -6286,44 +6313,44 @@ std::string PlayerbotAI::HandleRemoteCommand(std::string command)
             }
         }
         
-        if (target->GetStatus() == TravelStatus::TRAVEL_STATUS_NONE)
-            return out.str();
-        
-        out << "\nStatus: ";
-        if (target->GetStatus() == TravelStatus::TRAVEL_STATUS_READY)
-            out << "ready";        
-        else if (target->GetStatus() == TravelStatus::TRAVEL_STATUS_PREPARE)
-            out << "preparing";
-        else if (target->GetStatus() == TravelStatus::TRAVEL_STATUS_TRAVEL)
-            out << (target->IsForced() ? "forced traveling" : "traveling");
-        else if (target->GetStatus() == TravelStatus::TRAVEL_STATUS_WORK)
-            out << "working";
-        else if (target->GetStatus() == TravelStatus::TRAVEL_STATUS_COOLDOWN)
-            out << "cooldown";
-        else if (target->GetStatus() == TravelStatus::TRAVEL_STATUS_EXPIRED)
-            out << "expired";
-
-        if(target->GetStatus() != TravelStatus::TRAVEL_STATUS_EXPIRED)
-            out << " [for " << (target->GetTimeLeft()/1000) << "s]";
-
-        if(target->GetRetryCount(true) || target->GetRetryCount(false))
-            out << "(retry " << target->GetRetryCount(true) << "/" << target->GetRetryCount(false) << ")";
-
-        if (target->GetConditions().size())
+        if (target->GetStatus() != TravelStatus::TRAVEL_STATUS_NONE)
         {
-            out << "\nConditions: ";
+            out << "\nStatus: ";
+            if (target->GetStatus() == TravelStatus::TRAVEL_STATUS_READY)
+                out << "ready";
+            else if (target->GetStatus() == TravelStatus::TRAVEL_STATUS_PREPARE)
+                out << "preparing";
+            else if (target->GetStatus() == TravelStatus::TRAVEL_STATUS_TRAVEL)
+                out << (target->IsForced() ? "forced traveling" : "traveling");
+            else if (target->GetStatus() == TravelStatus::TRAVEL_STATUS_WORK)
+                out << "working";
+            else if (target->GetStatus() == TravelStatus::TRAVEL_STATUS_COOLDOWN)
+                out << "cooldown";
+            else if (target->GetStatus() == TravelStatus::TRAVEL_STATUS_EXPIRED)
+                out << "expired";
 
-            for (auto& condition : target->GetConditions())
+            if (target->GetStatus() != TravelStatus::TRAVEL_STATUS_EXPIRED)
+                out << " [for " << (target->GetTimeLeft() / 1000) << "s]";
+
+            if (target->GetRetryCount(true) || target->GetRetryCount(false))
+                out << "(retry " << target->GetRetryCount(true) << "/" << target->GetRetryCount(false) << ")";
+
+            if (target->GetConditions().size())
             {
-                AiObjectContext* context = GetAiObjectContext();
-                out << condition;
-                if (AI_VALUE(bool, condition))
-                    out << " (true)";
-                else
-                    out << " (false)";
+                out << "\nConditions: ";
 
-                if (condition != target->GetConditions().back())
-                    out << ", ";
+                for (auto& condition : target->GetConditions())
+                {
+                    AiObjectContext* context = GetAiObjectContext();
+                    out << condition;
+                    if (AI_VALUE(bool, condition))
+                        out << " (true)";
+                    else
+                        out << " (false)";
+
+                    if (condition != target->GetConditions().back())
+                        out << ", ";
+                }
             }
         }
 
@@ -7058,7 +7085,7 @@ std::list<Item*> PlayerbotAI::InventoryParseItems(std::string text, IterateItems
 
     //Look for item id's in the command.
     ItemIds ids = GetChatHelper()->parseItems(text);
-    if (!ids.empty())
+    if (!ids.empty() && text.find("usage ") == std::string::npos)
     {
         for (ItemIds::iterator i = ids.begin(); i != ids.end(); i++)
         {

@@ -321,7 +321,10 @@ bool SpellNoCooldownTrigger::IsActive()
 
 bool RandomTrigger::IsActive()
 {
+    if (time(0) - lastCheck < sPlayerbotAIConfig.repeatDelay / 1000)
+        return false;
 
+    lastCheck = time(0);
     int k = (int)(probability / sPlayerbotAIConfig.randomChangeMultiplier);
     if (k < 1) k = 1;
     return (rand() % k) == 0;

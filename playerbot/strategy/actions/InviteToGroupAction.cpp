@@ -57,7 +57,7 @@ namespace ai
 
         if (bot->GetGroup())
         {
-            if (ai->HasRealPlayerMaster())
+            if (ai->HasRealPlayerMaster() && master != ai->GetMaster())
                 return false;
 
             if (!ai->DoSpecificAction("leave", event, true))
@@ -264,7 +264,7 @@ namespace ai
                 continue;
 
 #ifdef MANGOSBOT_TWO
-            if (player->GetPhaseMask() != bot->GetPhaseMask())
+            if (player->InSamePhase(bot->GetPhaseMask()))
                 continue;
 #endif
 
