@@ -95,7 +95,11 @@ namespace ai
         bool Execute(Event& event) override
         {
             // Check the chance of using a potion (only in pvp)
+#ifdef MANGOSBOT_ZERO
             const bool shouldUsePotion = !ai->IsInPvp() || frand(0.0f, 1.0f) < sPlayerbotAIConfig.usePotionChance;
+#else
+            const bool shouldUsePotion = !bot->InArena() && (!ai->IsInPvp() || frand(0.0f, 1.0f) < sPlayerbotAIConfig.usePotionChance);
+#endif
             if (shouldUsePotion)
             {
                 return UseItemIdAction::Execute(event);
@@ -665,6 +669,9 @@ namespace ai
                 return true;
             }
 
+            if (AI_VALUE2(std::list<Item*>, "inventory items", name).empty())
+                return false;
+
             return UseAction::Execute(event);
         }
 
@@ -737,6 +744,9 @@ namespace ai
 
                 return true;
             }
+
+            if (AI_VALUE2(std::list<Item*>, "inventory items", name).empty())
+                return false;
 
             return UseAction::Execute(event);
         }
