@@ -948,7 +948,6 @@ void PlayerbotFactory::InitPetSpells()
                 pet->ToggleAutocast(growlSpellId, true);
             }
 
-            // Defensive abilities
             // Natural Armor
             struct NaturalArmorRank { uint32 minLevel; uint32 spellId; };
             static const NaturalArmorRank naturalArmorRanks[] = {
