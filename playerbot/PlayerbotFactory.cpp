@@ -995,7 +995,7 @@ void PlayerbotFactory::InitPetSpells()
             }
 
             // Resistances
-            if (pet->GetLevel() >= 60)
+            if (pet->GetLevel() >= 20)
             {
                 struct ResistanceSpell { uint32 spellId; };
                 static const ResistanceSpell resistances[] = {
