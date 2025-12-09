@@ -93,7 +93,7 @@ private:
 
 DruidStrategy::DruidStrategy(PlayerbotAI* ai) : ClassStrategy(ai)
 {
-    actionNodeFactories.Add(new DruidStrategyActionNodeFactory());
+    actionNodeFactories.Add(std::make_unique<DruidStrategyActionNodeFactory>());
 }
 
 #ifdef MANGOSBOT_ZERO // Vanilla
@@ -548,7 +548,7 @@ void DruidPvpStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
 
     triggers.push_back(new TriggerNode(
         "player has flag",
-        NextAction::array(0, new NextAction("travel form", ACTION_HIGH), NULL)));
+        NextAction::array(0, new NextAction("travel form", ACTION_EMERGENCY), NULL)));
 }
 
 void DruidPvpStrategy::InitReactionTriggers(std::list<TriggerNode*>& triggers)
