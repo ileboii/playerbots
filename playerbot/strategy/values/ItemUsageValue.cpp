@@ -696,8 +696,6 @@ ItemUsage ItemUsageValue::QueryItemUsageForEquip(ItemQualifier& itemQualifier, P
                         return ItemUsage::ITEM_USAGE_BAD_EQUIP;
             }
             break;
-
-
         default:
             if (itemIsBroken && !oldItemIsBroken)
                 return ItemUsage::ITEM_USAGE_BROKEN_EQUIP;
