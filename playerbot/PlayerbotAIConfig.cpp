@@ -556,7 +556,7 @@ bool PlayerbotAIConfig::Initialize()
 
     boostFollow = config.GetBoolDefault("AiPlayerbot.BoostFollow", false);
     turnInRpg = config.GetBoolDefault("AiPlayerbot.TurnInRpg", false);
-    shareTargets = config.GetBoolDefault("AiPlayerbot.ShareTargets", true);
+    shareTargets = config.GetBoolDefault("AiPlayerbot.ShareTargets", false);
     globalSoundEffects = config.GetBoolDefault("AiPlayerbot.GlobalSoundEffects", false);
     nonGmFreeSummon = config.GetBoolDefault("AiPlayerbot.NonGmFreeSummon", false);
 
