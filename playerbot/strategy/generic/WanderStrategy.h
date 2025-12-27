@@ -1,5 +1,4 @@
 #pragma once
-
 #include "playerbot/strategy/Strategy.h"
 
 namespace ai
