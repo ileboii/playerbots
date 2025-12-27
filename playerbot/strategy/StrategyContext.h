@@ -179,6 +179,8 @@ namespace ai
             creators["flee from adds"] = [](PlayerbotAI* ai) { return new FleeFromAddsStrategy(ai); };
             creators["guard"] = [](PlayerbotAI* ai) { return new GuardStrategy(ai); };
             creators["free"] = [](PlayerbotAI* ai) { return new FreeStrategy(ai); };
+            // register the new wander strategy
+            creators["wander"] = [](PlayerbotAI* ai) { return new WanderStrategy(ai); };
         }
     };
 
