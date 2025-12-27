@@ -1,10 +1,6 @@
 #pragma once
 
-#include "Strategy.h"
-
-#include <list>
-#include <string>
-#include <vector>
+#include "playerbot/strategy/Strategy.h"
 
 namespace ai
 {
