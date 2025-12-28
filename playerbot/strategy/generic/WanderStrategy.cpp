@@ -4,7 +4,7 @@
 
 using namespace ai;
 
-void WanderStrategy::InitNonCombatTriggers(std::list<TriggerNode*> &triggers)
+void WanderStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
 {
     triggers.push_back(new TriggerNode(
         "wander far",
