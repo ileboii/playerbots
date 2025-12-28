@@ -6240,7 +6240,7 @@ std::string PlayerbotAI::GetDefaultMovementStrategy()
     Player* master = GetGroupMaster();
 
     // Player master -> follow
-    if (master && master->isRealPlayer())
+    if (master && master != bot)
         return "follow";
 
     // Bot master -> wander
