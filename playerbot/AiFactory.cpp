@@ -851,7 +851,7 @@ void AiFactory::AddDefaultNonCombatStrategies(Player* player, PlayerbotAI* const
 
         if (master && !master->GetPlayerbotAI())
         {
-            nonCombatEngine->addStrategies("racials", "nc", "food", "follow", "default", "quest", "loot", "gather", "duel", "emote", "buff", "mount", NULL);
+            nonCombatEngine->addStrategies("racials", "nc", "food", "wander", "default", "quest", "loot", "gather", "duel", "emote", "buff", "mount", NULL);
         }
         else
         {

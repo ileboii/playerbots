@@ -6239,7 +6239,7 @@ std::string PlayerbotAI::GetDefaultMovementStrategy()
 {
     // Player master -> follow
     if (HasActivePlayerMaster())
-        return "follow";
+        return "wander";
 
     // Bot/no master -> wander
     return "wander";
