@@ -1229,6 +1229,7 @@ bool UseHearthStoneAction::Execute(Event& event)
     const bool used = UseAction::Execute(event);
     if (used)
     {
+        sPlayerbotAIConfig.logEvent(ai, "UseHearthStoneAction", event.getParam(), event.getSource());
         RESET_AI_VALUE(bool, "combat::self target");
         RESET_AI_VALUE(WorldPosition, "current position");
     }

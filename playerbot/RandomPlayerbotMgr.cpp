@@ -343,26 +343,44 @@ int RandomPlayerbotMgr::GetMaxAllowedBotCount()
     return GetEventValue(0, "bot_count");
 }
 
-inline std::ostringstream print_path(Unit* bot, std::vector<std::pair<int, int>>& log, bool is_sqDist_greater_200 = false) {
+inline void print_line(Unit* bot, const std::vector<std::pair<int, int>> line, bool is_sqDist_greater_200)
+{
     std::ostringstream out;
     out << bot->GetName() << ",";
     out << std::fixed << std::setprecision(1);
     out << "\"LINESTRING(";
-    if (is_sqDist_greater_200) {
-        out << log.back().first << " " << log.back().second << ",";
-        out << WorldPosition(bot).getDisplayX() << " " << WorldPosition(bot).getDisplayY();
-    }
-    else {
-        for (auto& p : log) {
-            out << p.first << " " << p.second << (&p == &log.back() ? "" : ",");
-        }
+    for (auto& p : line)
+    {
+        out << p.first << " " << p.second << (&p == &line.back() ? "" : ",");
     }
     out << ")\",";
     out << bot->GetOrientation() << ",";
     out << std::to_string(bot->getRace()) << ",";
     out << std::to_string(bot->getClass()) << ",";
     out << (is_sqDist_greater_200 ? "1" : "0");
-    return out;
+    sPlayerbotAIConfig.log("player_paths.csv", out.str().c_str());
+}
+
+inline void print_path(Unit* bot, std::vector<std::pair<int, int>>& log)
+{
+    std::vector<std::pair<int, int>> line;
+
+    std::pair<int, int> lastP = { 0, 0 };
+
+    for (auto& p : log)
+    {
+        if (lastP.first && lastP.second && pow(lastP.first - p.first, 2) + pow(lastP.second - p.second, 2) > 200 * 200)
+        {
+            if (line.size() > 1)
+                print_line(bot, line, false);      //Print previous path.
+            print_line(bot, { lastP, p }, true); //Print jump.
+            line.clear();
+        }
+        line.push_back(p);
+        lastP = p;
+    }
+    if (line.size() > 1)
+        print_line(bot, line, false); //Print remaining path.
 }
 
 void RandomPlayerbotMgr::LogPlayerLocation()
@@ -424,29 +442,19 @@ void RandomPlayerbotMgr::LogPlayerLocation()
 
                         sPlayerbotAIConfig.log("player_location.csv", out.str().c_str());
 
-                        if (sPlayerbotAIConfig.hasLog("player_paths.csv"))
+                        if (sPlayerbotAIConfig.hasLog("player_paths.csv") && WorldPosition(bot))
                         {
                             auto& botMoveLog = playerBotMoveLog[bot->GetObjectGuid().GetCounter()];
-                            float sqDist = (botMoveLog.empty() ? 1 : (pow(botMoveLog.back().first - int32(WorldPosition(bot).getDisplayX()), 2) + pow(botMoveLog.back().second - int32(WorldPosition(bot).getDisplayY()), 2)));
-                            if (sqDist <= 200 * 200)
-                            {
-                                botMoveLog.push_back(std::make_pair(WorldPosition(bot).getDisplayX(), WorldPosition(bot).getDisplayY()));
-                                if (botMoveLog.size() > 100)
-                                {
-                                    sPlayerbotAIConfig.log("player_paths.csv", print_path(bot, botMoveLog).str().c_str());
-                                    botMoveLog.clear();
-                                }
-                            }
-                            else if (sqDist >= 200 * 200)
-                            {
-                                if (botMoveLog.size() > 1)
-                                {
-                                    sPlayerbotAIConfig.log("player_paths.csv", print_path(bot, botMoveLog).str().c_str());
-                                }
 
-                                sPlayerbotAIConfig.log("player_paths.csv", print_path(bot, botMoveLog, true).str().c_str());
+                            std::pair<int32, int32> curDisplayPos = std::make_pair(WorldPosition(bot).getDisplayX(), WorldPosition(bot).getDisplayY());
+
+                            botMoveLog.push_back(curDisplayPos);
+
+                            if (botMoveLog.size() > 100)
+                            {
+                                print_path(bot, botMoveLog);
                                 botMoveLog.clear();
-                                botMoveLog.push_back(std::make_pair(WorldPosition(bot).getDisplayX(), WorldPosition(bot).getDisplayY()));
+                                botMoveLog.push_back(curDisplayPos); //Start next path at current position.
                             }
                         }
                     });
@@ -501,22 +509,19 @@ void RandomPlayerbotMgr::LogPlayerLocation()
 
                 sPlayerbotAIConfig.log("player_location.csv", out.str().c_str());
 
-                if (sPlayerbotAIConfig.hasLog("player_paths.csv"))
+                if (sPlayerbotAIConfig.hasLog("player_paths.csv") && WorldPosition(bot))
                 {
-                    float sqDist = (playerBotMoveLog[i.first].empty() ? 1 : (pow(playerBotMoveLog[i.first].back().first - int32(WorldPosition(bot).getDisplayX()), 2) + pow(playerBotMoveLog[i.first].back().second - int32(WorldPosition(bot).getDisplayY()), 2)));
-                    if (sqDist <= 200 * 200) {
-                        playerBotMoveLog[i.first].push_back(std::make_pair(WorldPosition(bot).getDisplayX(), WorldPosition(bot).getDisplayY()));
-                        if (playerBotMoveLog[i.first].size() > 100) {
-                            sPlayerbotAIConfig.log("player_paths.csv", print_path(bot, playerBotMoveLog[i.first]).str().c_str());
-                            playerBotMoveLog[i.first].clear();
-                        }
-                    }
-                    else if (sqDist >= 200 * 200) {
-                        if (playerBotMoveLog[i.first].size() > 1)
-                            sPlayerbotAIConfig.log("player_paths.csv", print_path(bot, playerBotMoveLog[i.first]).str().c_str());
-                        sPlayerbotAIConfig.log("player_paths.csv", print_path(bot, playerBotMoveLog[i.first], true).str().c_str());
-                        playerBotMoveLog[i.first].clear();
-                        playerBotMoveLog[i.first].push_back(std::make_pair(WorldPosition(bot).getDisplayX(), WorldPosition(bot).getDisplayY()));
+                    auto& botMoveLog = playerBotMoveLog[bot->GetObjectGuid().GetCounter()];
+
+                    std::pair<int32, int32> curDisplayPos = std::make_pair(WorldPosition(bot).getDisplayX(), WorldPosition(bot).getDisplayY());
+
+                    botMoveLog.push_back(curDisplayPos);
+
+                    if (botMoveLog.size() > 100)
+                    {
+                        print_path(bot, botMoveLog);
+                        botMoveLog.clear();
+                        botMoveLog.push_back(curDisplayPos); //Start next path at current position.
                     }
                 }
             }
@@ -586,7 +591,8 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed, bool minimal)
     std::list<uint32> availableBots = GetBots();
     uint32 availableBotCount = availableBots.size();
     uint32 onlineBotCount = GetPlayerbotsAmount();
-    SetAIInternalUpdateDelay(sPlayerbotAIConfig.randomBotUpdateInterval * 1000);
+
+    SetAIInternalUpdateDelay(sPlayerbotAIConfig.randomBotUpdateInterval);
 
     auto pmo = sPerformanceMonitor.start(PERF_MON_TOTAL,
         onlineBotCount < maxAllowedBotCount ? "RandomPlayerbotMgr::Login" : "RandomPlayerbotMgr::UpdateAIInternal");
@@ -629,49 +635,43 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed, bool minimal)
     if (time(nullptr) > (OfflineGroupBotsTimer + 5) && players.size())
         AddOfflineGroupBots();
 
-    uint32 updateBots = sPlayerbotAIConfig.randomBotsPerInterval;
-    uint32 maxNewBots = sPlayerbotAIConfig.randomBotsMaxLoginsPerInterval;
-    if (onlineBotCount < sPlayerbotAIConfig.minRandomBots * sPlayerbotAIConfig.loginBoostPercentage / 100)
-        maxNewBots *= 2;
-
-    uint32 loginBots = 0;
-
-    if (!availableBots.empty())
+    //Update bots
+    for (auto bot : availableBots)
     {
-        //Update bots
+        if (GetPlayerBot(bot))
+        {
+            ProcessBot(bot);
+        }
+        else if (GetEventValue(bot, "login"))
+        {
+            ProcessBot(bot);
+
+            onlineBotCount++;
+        }
+    }
+
+    uint32 maxLogins = sPlayerbotAIConfig.randomBotsMaxLoginsPerInterval;
+
+    //Log in bots
+    if (sRandomPlayerbotMgr.GetDatabaseDelay("CharacterDatabase") < 10 * IN_MILLISECONDS && !sPlayerbotAIConfig.asyncBotLogin && onlineBotCount < maxAllowedBotCount && maxLogins > 0)
+    {
         for (auto bot : availableBots)
         {
             if (GetPlayerBot(bot))
                 continue;
 
-            if (ProcessBot(bot))
-                updateBots--;
+            if (GetEventValue(bot, "login"))
+                continue;
 
-            if (!updateBots)
+            ProcessBot(bot);
+
+            ++onlineBotCount;
+            if (onlineBotCount >= maxAllowedBotCount)
                 break;
-        }
 
-        //Log in bots
-        if (sRandomPlayerbotMgr.GetDatabaseDelay("CharacterDatabase") < 10 * IN_MILLISECONDS && !sPlayerbotAIConfig.asyncBotLogin)
-        {
-            for (auto bot : availableBots)
-            {
-                if (GetPlayerBot(bot))
-                    continue;   
-
-                if (GetEventValue(bot, "login"))
-                    onlineBotCount++;
-
-                if (onlineBotCount + loginBots > maxAllowedBotCount)
-                    break;
-
-                if (ProcessBot(bot)) {
-                    loginBots++;
-                }
-
-                if (loginBots > maxNewBots)
-                    break;
-            }
+            --maxLogins;
+            if (maxLogins == 0)
+                break;
         }
     }
 
@@ -835,6 +835,7 @@ void RandomPlayerbotMgr::DelayedFacingFix()
 void RandomPlayerbotMgr::DatabasePing(QueryResult* result, uint32 pingStart, std::string db)
 {
     sRandomPlayerbotMgr.SetDatabaseDelay(db, sWorld.GetCurrentMSTime() - pingStart);
+    delete result;
 }
 
 void RandomPlayerbotMgr::LoadNamedLocations()
@@ -1919,30 +1920,19 @@ bool RandomPlayerbotMgr::AddRandomBot(uint32 bot)
         return false;
     }
 
-    AddPlayerBot(bot, 0);
-    SetEventValue(bot, "add", 1, urand(sPlayerbotAIConfig.minRandomBotInWorldTime, sPlayerbotAIConfig.maxRandomBotInWorldTime));
-    SetEventValue(bot, "logout", 0, 0);
-    SetEventValue(bot, "login", 1, sPlayerbotAIConfig.randomBotUpdateInterval);
-    uint32 randomTime = urand(sPlayerbotAIConfig.minRandomBotReviveTime, sPlayerbotAIConfig.maxRandomBotReviveTime);
-    SetEventValue(bot, "update", 1, randomTime);
-    currentBots.push_back(bot);
-    sLog.outBasic("Random bot added #%d", bot);
+    if (!GetEventValue(bot, "login"))
+    {
+        AddPlayerBot(bot, 0);
+        SetEventValue(bot, "add", 1, urand(sPlayerbotAIConfig.minRandomBotInWorldTime, sPlayerbotAIConfig.maxRandomBotInWorldTime));
+        SetEventValue(bot, "logout", 0, 0);
+        SetEventValue(bot, "login", 1, -1);
+        uint32 randomTime = urand(sPlayerbotAIConfig.minRandomBotReviveTime, sPlayerbotAIConfig.maxRandomBotReviveTime);
+        SetEventValue(bot, "update", 1, randomTime);
+        currentBots.push_back(bot);
+        sLog.outDetail("Random bot added #%d", bot);
+    }
+
     return true;
-
-    player = GetPlayerBot(bot);
-
-    if (player)
-    {
-        sLog.outError("Random bot added #%d", bot);
-        return true;
-    }
-    else
-    {
-        sLog.outError("Failed to add random bot #%d", bot);
-        return false;
-    }
-
-    return false;
 }
 
 void RandomPlayerbotMgr::MovePlayerBot(uint32 guid, PlayerbotHolder* newHolder)
@@ -2014,10 +2004,16 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
         if (!botsAllowedInWorld)
             return false;
 
+        if (GetEventValue(bot, "login"))
+            return true;
+
         AddPlayerBot(bot, 0);
-        SetEventValue(bot, "login", 1, sPlayerbotAIConfig.randomBotUpdateInterval * 100);
+
+        SetEventValue(bot, "login", 1, -1); // This will be reset to 0 on server startup. Check RandomPlayerbotMgr constructor
+
         uint32 randomTime = urand(sPlayerbotAIConfig.minRandomBotReviveTime, sPlayerbotAIConfig.maxRandomBotReviveTime);
         SetEventValue(bot, "update", 1, randomTime);
+
         return true;
     }
 
