@@ -591,8 +591,8 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed, bool minimal)
     std::list<uint32> availableBots = GetBots();
     uint32 availableBotCount = availableBots.size();
     uint32 onlineBotCount = GetPlayerbotsAmount();
-
-    SetAIInternalUpdateDelay(sPlayerbotAIConfig.randomBotUpdateInterval);
+    
+    SetAIInternalUpdateDelay(sPlayerbotAIConfig.randomBotUpdateInterval * 1000);
 
     auto pmo = sPerformanceMonitor.start(PERF_MON_TOTAL,
         onlineBotCount < maxAllowedBotCount ? "RandomPlayerbotMgr::Login" : "RandomPlayerbotMgr::UpdateAIInternal");
@@ -635,43 +635,49 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed, bool minimal)
     if (time(nullptr) > (OfflineGroupBotsTimer + 5) && players.size())
         AddOfflineGroupBots();
 
-    //Update bots
-    for (auto bot : availableBots)
+    uint32 updateBots = sPlayerbotAIConfig.randomBotsPerInterval;
+    uint32 maxNewBots = sPlayerbotAIConfig.randomBotsMaxLoginsPerInterval;
+    if (onlineBotCount < sPlayerbotAIConfig.minRandomBots * sPlayerbotAIConfig.loginBoostPercentage / 100)
+        maxNewBots *= 2;
+
+    uint32 loginBots = 0;
+
+    if (!availableBots.empty())
     {
-        if (GetPlayerBot(bot))
-        {
-            ProcessBot(bot);
-        }
-        else if (GetEventValue(bot, "login"))
-        {
-            ProcessBot(bot);
-
-            onlineBotCount++;
-        }
-    }
-
-    uint32 maxLogins = sPlayerbotAIConfig.randomBotsMaxLoginsPerInterval;
-
-    //Log in bots
-    if (sRandomPlayerbotMgr.GetDatabaseDelay("CharacterDatabase") < 10 * IN_MILLISECONDS && !sPlayerbotAIConfig.asyncBotLogin && onlineBotCount < maxAllowedBotCount && maxLogins > 0)
-    {
+        //Update bots
         for (auto bot : availableBots)
         {
-            if (GetPlayerBot(bot))
+            if (!GetPlayerBot(bot))
                 continue;
 
-            if (GetEventValue(bot, "login"))
-                continue;
+            if (ProcessBot(bot))
+                updateBots--;
 
-            ProcessBot(bot);
-
-            ++onlineBotCount;
-            if (onlineBotCount >= maxAllowedBotCount)
+            if (!updateBots)
                 break;
+        }
 
-            --maxLogins;
-            if (maxLogins == 0)
-                break;
+        //Log in bots
+        if (sRandomPlayerbotMgr.GetDatabaseDelay("CharacterDatabase") < 10 * IN_MILLISECONDS && !sPlayerbotAIConfig.asyncBotLogin)
+        {
+            for (auto bot : availableBots)
+            {
+                if (GetPlayerBot(bot))
+                    continue;   
+
+                if (GetEventValue(bot, "login"))
+                    onlineBotCount++;
+
+                if (onlineBotCount + loginBots > maxAllowedBotCount)
+                    break;
+
+                if (ProcessBot(bot)) {
+                    loginBots++;
+                }
+
+                if (loginBots > maxNewBots)
+                    break;
+            }
         }
     }
 
@@ -1920,19 +1926,30 @@ bool RandomPlayerbotMgr::AddRandomBot(uint32 bot)
         return false;
     }
 
-    if (!GetEventValue(bot, "login"))
+    AddPlayerBot(bot, 0);
+    SetEventValue(bot, "add", 1, urand(sPlayerbotAIConfig.minRandomBotInWorldTime, sPlayerbotAIConfig.maxRandomBotInWorldTime));
+    SetEventValue(bot, "logout", 0, 0);
+    SetEventValue(bot, "login", 1, sPlayerbotAIConfig.randomBotUpdateInterval);
+    uint32 randomTime = urand(sPlayerbotAIConfig.minRandomBotReviveTime, sPlayerbotAIConfig.maxRandomBotReviveTime);
+    SetEventValue(bot, "update", 1, randomTime);
+    currentBots.push_back(bot);
+    sLog.outBasic("Random bot added #%d", bot);
+    return true;
+
+    player = GetPlayerBot(bot);
+
+    if (player)
     {
-        AddPlayerBot(bot, 0);
-        SetEventValue(bot, "add", 1, urand(sPlayerbotAIConfig.minRandomBotInWorldTime, sPlayerbotAIConfig.maxRandomBotInWorldTime));
-        SetEventValue(bot, "logout", 0, 0);
-        SetEventValue(bot, "login", 1, -1);
-        uint32 randomTime = urand(sPlayerbotAIConfig.minRandomBotReviveTime, sPlayerbotAIConfig.maxRandomBotReviveTime);
-        SetEventValue(bot, "update", 1, randomTime);
-        currentBots.push_back(bot);
-        sLog.outDetail("Random bot added #%d", bot);
+        sLog.outError("Random bot added #%d", bot);
+        return true;
+    }
+    else
+    {
+        sLog.outError("Failed to add random bot #%d", bot);
+        return false;
     }
 
-    return true;
+    return false;
 }
 
 void RandomPlayerbotMgr::MovePlayerBot(uint32 guid, PlayerbotHolder* newHolder)
@@ -2004,16 +2021,10 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
         if (!botsAllowedInWorld)
             return false;
 
-        if (GetEventValue(bot, "login"))
-            return true;
-
         AddPlayerBot(bot, 0);
-
-        SetEventValue(bot, "login", 1, -1); // This will be reset to 0 on server startup. Check RandomPlayerbotMgr constructor
-
+        SetEventValue(bot, "login", 1, sPlayerbotAIConfig.randomBotUpdateInterval * 100);
         uint32 randomTime = urand(sPlayerbotAIConfig.minRandomBotReviveTime, sPlayerbotAIConfig.maxRandomBotReviveTime);
         SetEventValue(bot, "update", 1, randomTime);
-
         return true;
     }
 
