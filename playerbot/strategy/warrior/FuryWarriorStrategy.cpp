@@ -162,12 +162,16 @@ void FuryWarriorAoeStrategy::InitCombatTriggers(std::list<TriggerNode*>& trigger
     WarriorAoeStrategy::InitCombatTriggers(triggers);
 
     triggers.push_back(new TriggerNode(
-        "melee medium aoe",
-        NextAction::array(0, new NextAction("whirlwind", ACTION_HIGH + 5), NULL)));
+        "melee light aoe",
+        NextAction::array(0, new NextAction("sweeping strikes", ACTION_HIGH + 5), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "melee medium aoe",
-        NextAction::array(0, new NextAction("bloodthirst", ACTION_HIGH + 4), NULL)));
+        "melee light aoe",
+        NextAction::array(0, new NextAction("whirlwind", ACTION_HIGH + 4), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "melee high aoe",
+        NextAction::array(0, new NextAction("retaliation", ACTION_HIGH + 5), NULL)));
 }
 
 void FuryWarriorAoeStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
