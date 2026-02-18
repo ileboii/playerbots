@@ -1927,6 +1927,63 @@ void PlayerbotAI::ChangeEngine(BotState type)
     }
 }
 
+inline bool DoMinimalMove(PlayerbotAI* ai)
+{
+    if(!sPlayerbotAIConfig.enableMinimalMove)
+        return false;
+
+    auto pmo1 = sPerformanceMonitor.start(PERF_MON_ACTION, "minimalMove", ai);
+
+    AiObjectContext* context = ai->GetAiObjectContext();
+    Player* bot = ai->GetBot();
+    LastMovement& lastMove = AI_VALUE(LastMovement&, "last movement");
+
+    if (lastMove.lastPath.empty())
+        return false;
+
+    time_t now = time(0);
+
+    if (lastMove.nextTeleport > now)
+        return false;
+
+    PathNodePoint nextStep = lastMove.lastPath.getPath().front();
+    bool doDelay = true;
+
+    if (!nextStep.isWalkable())
+    {
+        for (auto& step : lastMove.lastPath.getPath())
+        {
+            if (!step.isWalkable())
+                continue;
+
+            nextStep = step;
+            doDelay = true;
+            break;
+        }
+    }
+
+    if (!nextStep.isWalkable())
+        return false;
+
+    if (ai->HasPlayerNearby(nextStep.point, sWorld.getConfig(CONFIG_FLOAT_LISTEN_RANGE_YELL)))
+        return false;
+
+    uint32 time = 1;
+
+    if (doDelay)
+    {
+        time = nextStep.point.distance(bot) / bot->GetSpeedInMotion();
+    }
+
+    lastMove.nextTeleport = now + time; 
+
+    lastMove.lastPath.cutTo(nextStep);
+
+    bot->TeleportTo(nextStep.point);
+
+    return true;
+}
+
 void PlayerbotAI::DoNextAction(bool min)
 {
     if (!bot->IsInWorld() || bot->IsBeingTeleported() || (GetMaster() && GetMaster()->IsBeingTeleported()))
@@ -1955,7 +2012,9 @@ void PlayerbotAI::DoNextAction(bool min)
 
     if (minimal)
     {
-        if(!bot->isAFK() && !bot->InBattleGround() && !HasRealPlayerMaster())
+
+
+        if (!DoMinimalMove(this) && !bot->isAFK() && !bot->InBattleGround() && !HasRealPlayerMaster())
             bot->ToggleAFK();
 
         SetAIInternalUpdateDelay(sPlayerbotAIConfig.passiveDelay);
@@ -5885,6 +5944,14 @@ ActivePiorityType PlayerbotAI::GetPriorityType()
     if (IsInRealGuild())
         return ActivePiorityType::PLAYER_GUILD;
 
+    if (sPlayerbotAIConfig.enableMinimalMove)
+    {
+        AiObjectContext* context = GetAiObjectContext();
+        LastMovement& lastMove = AI_VALUE(LastMovement&, "last movement");
+        if (lastMove.lastPath.empty() && !urand(0, 5))
+            return ActivePiorityType::NO_PATH;
+    }
+
     if (bot->IsBeingTeleported() || !bot->IsInWorld() || !bot->GetMap()->HasRealPlayers())
         return ActivePiorityType::IN_INACTIVE_MAP;
 
@@ -5920,6 +5987,8 @@ std::pair<uint32, uint32> PlayerbotAI::GetPriorityBracket(ActivePiorityType type
     case ActivePiorityType::PLAYER_FRIEND:
     case ActivePiorityType::PLAYER_GUILD:
         return { 0,50 };
+    case ActivePiorityType::NO_PATH:
+        return { 50, 100};
     case ActivePiorityType::IN_ACTIVE_AREA:
     case ActivePiorityType::IN_EMPTY_SERVER:
         return { 50,100 };
@@ -5956,6 +6025,7 @@ bool PlayerbotAI::AllowActive(ActivityType activityType)
         case ActivePiorityType::IN_LFG:
         case ActivePiorityType::PLAYER_FRIEND:
         case ActivePiorityType::PLAYER_GUILD:
+        case ActivePiorityType::NO_PATH:
         case ActivePiorityType::IN_ACTIVE_AREA:
         case ActivePiorityType::IN_EMPTY_SERVER:
         case ActivePiorityType::IN_ACTIVE_MAP:
@@ -5982,6 +6052,7 @@ bool PlayerbotAI::AllowActive(ActivityType activityType)
         case ActivePiorityType::IN_LFG:
         case ActivePiorityType::PLAYER_FRIEND:
         case ActivePiorityType::PLAYER_GUILD:
+        case ActivePiorityType::NO_PATH:
         case ActivePiorityType::IN_ACTIVE_AREA:
         case ActivePiorityType::IN_EMPTY_SERVER:
         case ActivePiorityType::IN_ACTIVE_MAP:
