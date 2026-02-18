@@ -1291,6 +1291,7 @@ bool PlayerbotAI::IsAllowedCommand(std::string text)
     if (unsecuredCommands.empty())
     {
         unsecuredCommands.insert("who");
+        unsecuredCommands.insert("where");
         unsecuredCommands.insert("wts");
         unsecuredCommands.insert("sendmail");
         unsecuredCommands.insert("invite");
@@ -3394,6 +3395,9 @@ bool PlayerbotAI::TellPlayerNoFacing(Player* player, std::string text, Playerbot
         if (type == CHAT_MSG_SYSTEM && (sPlayerbotAIConfig.randomBotSayWithoutMaster || HasStrategy("debug", BotState::BOT_STATE_NON_COMBAT)))
             type = CHAT_MSG_SAY;
 
+        if (type == CHAT_MSG_SYSTEM && player->isRealPlayer())
+            type = CHAT_MSG_WHISPER;
+
         if ((sPlayerbotAIConfig.hasLog("chat_log.csv") && HasStrategy("debug log", BotState::BOT_STATE_NON_COMBAT)) || HasStrategy("debug logname", BotState::BOT_STATE_NON_COMBAT))
         {
             std::ostringstream out;
@@ -3453,7 +3457,7 @@ bool PlayerbotAI::TellPlayerNoFacing(Player* player, std::string text, Playerbot
                 if (!IsTellAllowed(player, securityLevel))
                     return false;
 
-                if (!HasRealPlayerMaster())
+                if (!HasRealPlayerMaster() && !player->isRealPlayer())
                     return false;
 
                 whispers[text] = time(0);
