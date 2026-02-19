@@ -172,9 +172,16 @@ void ChooseTravelTargetAction::ReportTravelTarget(Player* bot, Player* requester
             out << "Currently";
 
             if (newTarget->GetPosition() && !newTarget->GetPosition()->getAreaName().empty())
-                out << " at " << newTarget->GetPosition()->getAreaName();
+            {
+                if (destination->DistanceTo(bot) < 100.0f)
+                    out << " in ";
+                else
+                    out << " near ";
+
+                out << newTarget->GetPosition()->getAreaName();
+            }
             else
-                out << " working";
+                out << " traveling";
         }
         else
         {
@@ -212,7 +219,7 @@ void ChooseTravelTargetAction::ReportTravelTarget(Player* bot, Player* requester
             else if (futureTravelPurpose == "petition")
                 out << " to hand in a petition";
             else
-                out << " to roleplay with";
+                out << " to roleplay";
         }
         else
         {
@@ -225,7 +232,7 @@ void ChooseTravelTargetAction::ReportTravelTarget(Player* bot, Player* requester
     if (out.str().empty())
         return;
 
-    ai->TellPlayerNoFacing(requester, out, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+    ai->TellPlayerNoFacing(requester, out, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_TALK, false);
 
     std::string message = out.str().c_str();
 

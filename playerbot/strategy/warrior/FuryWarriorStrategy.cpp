@@ -163,10 +163,6 @@ void FuryWarriorAoeStrategy::InitCombatTriggers(std::list<TriggerNode*>& trigger
 
     triggers.push_back(new TriggerNode(
         "melee light aoe",
-        NextAction::array(0, new NextAction("sweeping strikes", ACTION_HIGH + 5), NULL)));
-
-    triggers.push_back(new TriggerNode(
-        "melee light aoe",
         NextAction::array(0, new NextAction("whirlwind", ACTION_HIGH + 4), NULL)));
 
     triggers.push_back(new TriggerNode(

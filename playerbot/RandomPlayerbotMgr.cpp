@@ -3,6 +3,7 @@
 #include "playerbot/playerbot.h"
 #include "playerbot/PlayerbotAIConfig.h"
 #include "playerbot/PlayerbotFactory.h"
+#include "strategy/values/LastMovementValue.h"
 #include "Accounts/AccountMgr.h"
 #include "Globals/ObjectMgr.h"
 #include "Database/DatabaseEnv.h"
@@ -393,6 +394,10 @@ void RandomPlayerbotMgr::LogPlayerLocation()
         try
         {
             sPlayerbotAIConfig.openLog("player_location.csv", "w");
+
+            if (sPlayerbotAIConfig.hasLog("player_route.csv"))
+                sPlayerbotAIConfig.openLog("player_route.csv", "w");
+
             if (sPlayerbotAIConfig.randomBotAutologin)
             {
                 ForEachPlayerbot([&](Player* bot)
