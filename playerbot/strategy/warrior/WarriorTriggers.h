@@ -96,7 +96,7 @@ namespace ai
         bool IsActive() override
         {
 #ifdef MANGOSBOT_ZERO
-            return SpellCanBeCastedTrigger::IsActive() && (AI_VALUE2(uint8, "health", "current target") > 20 || ai->IsTank(bot));
+            return SpellCanBeCastedTrigger::IsActive() && (AI_VALUE2(uint8, "health", "current target") > 20);
 #elif MANGOSBOT_ONE
             return SpellCanBeCastedTrigger::IsActive()
                 && (AI_VALUE2(uint8, "health", "current target") > 20 || AI_VALUE2(uint8, "rage", "self target") >= 40);
