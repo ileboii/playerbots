@@ -270,6 +270,166 @@ bool MovementAction::FlyDirect(WorldPosition &startPosition, WorldPosition &endP
 #endif
 }
 
+bool MovementAction::UseTaxi(PlayerbotAI* ai, uint32 entry, bool needNpc)
+{
+    AiObjectContext* context = ai->GetAiObjectContext();
+    Player* bot = ai->GetBot();
+
+    TaxiPathEntry const* tEntry = sTaxiPathStore.LookupEntry(entry);
+
+    if (!tEntry)
+    {
+#ifdef MANGOSBOT_TWO
+        bot->OnTaxiFlightEject(true);
+        ai->Unmount();
+#endif
+        bool goClick = ai->HandleSpellClick(entry); //Source gryphon of ebonhold.
+        return goClick;
+    }
+
+    Creature* unit = nullptr;
+
+    if (needNpc)
+    {
+        std::list<ObjectGuid> npcs = AI_VALUE(std::list<ObjectGuid>, "nearest npcs");
+        for (std::list<ObjectGuid>::iterator i = npcs.begin(); i != npcs.end(); i++)
+        {
+            unit = bot->GetNPCIfCanInteractWith(*i, UNIT_NPC_FLAG_FLIGHTMASTER);
+            if (unit)
+                break;
+        }
+
+        if (!unit)
+        {
+            return false;
+        }
+
+        if (unit && !bot->m_taxi.IsTaximaskNodeKnown(tEntry->from))
+        {
+            bot->GetSession()->SendLearnNewTaxiNode(unit);
+
+            unit->SetFacingTo(unit->GetAngle(bot));
+        }
+    }
+
+    uint32 botMoney = bot->GetMoney();
+    if (ai->HasCheat(BotCheatMask::gold) || ai->HasCheat(BotCheatMask::taxi))
+    {
+        bot->SetMoney(botMoney + tEntry->price);
+    }
+
+    bot->OnTaxiFlightEject(true);
+
+    ai->Unmount();
+
+    bool goTaxi = bot->ActivateTaxiPathTo({tEntry->from, tEntry->to}, unit, 1);
+
+    if (!goTaxi)
+        bot->SetMoney(botMoney);
+
+    return goTaxi;
+}
+
+
+bool MovementAction::MinimalMove(PlayerbotAI* ai)
+{
+    if (!sPlayerbotAIConfig.enableMinimalMove)
+        return false;
+
+    auto pmo1 = sPerformanceMonitor.start(PERF_MON_ACTION, "minimalMove", ai);
+
+    AiObjectContext* context = ai->GetAiObjectContext();
+    Player* bot = ai->GetBot();
+    LastMovement& lastMove = AI_VALUE(LastMovement&, "last movement");
+
+    if (bot->IsTaxiFlying())
+        return false;
+
+    if (lastMove.lastPath.empty())
+        return false;
+
+    time_t now = time(0);
+
+    if (lastMove.nextTeleport > now)
+        return false;
+
+    lastMove.nextTeleport = now + sPlayerbotAIConfig.passiveDelay/1000; //For teleports/transports/ect 
+
+    std::vector<PathNodePoint>& path = lastMove.lastPath.getPath();
+
+    auto nextStep = path.begin();
+
+    bool doDelay = true;
+
+    //Taxi handling: Start taxi and remove path until it ends.
+    if (nextStep->type == PathNodeType::NODE_FLIGHTPATH)
+    {
+        if (nextStep->point.sqDistance(bot) > INTERACTION_DISTANCE * INTERACTION_DISTANCE)
+        {
+            bot->TeleportTo(nextStep->point);
+
+            return true;
+        }
+
+        bool didTaxi = UseTaxi(ai, nextStep->entry, false);
+
+        for (auto& step : path)
+        {
+            if (step.type == PathNodeType::NODE_FLIGHTPATH && step.entry == nextStep->entry)
+                continue;
+
+            lastMove.lastPath.cutTo(step, false); //Remove path until next walk or taxi.
+            break;
+        }
+
+        return true;
+    }
+
+
+    //Skip over stuff we don't walk.
+    if (!nextStep->isWalkable())
+    {
+        auto it = std::find_if(std::next(nextStep), path.end(), [](const auto& step) {
+            return step.isWalkable();
+        });
+
+        if (it != path.end())
+        {
+            nextStep = it;
+            doDelay = true;
+        }
+    }
+
+    if (!nextStep->isWalkable())
+        return false;
+
+    if (ai->HasPlayerNearby(nextStep->point, sWorld.getConfig(CONFIG_FLOAT_LISTEN_RANGE_YELL)))
+        return true;
+
+    bot->TeleportTo(nextStep->point);
+
+    if (std::next(nextStep) == path.end())
+        lastMove.lastPath.clear();
+
+    uint32 time = 0;
+
+    for (auto it = std::next(nextStep); it != path.end(); ++it)
+    {
+        time += (nextStep->point.distance(bot) / bot->GetSpeedInMotion()) * 1000;
+
+        nextStep = it;
+
+        if (!it->isWalkable() || time > sPlayerbotAIConfig.passiveDelay)
+            break;
+    }
+
+    lastMove.nextTeleport = now + (time / 1000);
+
+    lastMove.lastPath.cutTo(*nextStep, false);
+
+    return true;
+}
+
 bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, bool react, bool noPath, bool ignoreEnemyTargets)
 {
     WorldPosition endPosition(mapId, x, y, z, 0);
@@ -340,7 +500,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
     if (totalDistance < minDist)
     {
         if (lastMove.lastMoveShort.distance(endPosition) < maxDistChange)
-            AI_VALUE(LastMovement&, "last movement").clear();
+            lastMove.clear();
         if (mover == bot)
             ai->StopMoving();
         else
@@ -376,7 +536,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
                     {
                         movePath.clear();
                         movePath.addPoint(endPosition);
-                        AI_VALUE(LastMovement&, "last movement").setPath(movePath);
+                        lastMove.setPath(movePath);
 
                         if (mover == bot)
                             ai->StopMoving();
@@ -438,6 +598,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
         float oldDist;
         if (ai->HasStrategy("debug move", BotState::BOT_STATE_NON_COMBAT))
             oldDist = WorldPosition().getPathLength(movePath.getPointPath());
+
         if (!bot->GetTransport() && urand(0,1) && movePath.makeShortCut(startPosition, sPlayerbotAIConfig.reactDistance, bot))
             if (ai->HasStrategy("debug move", BotState::BOT_STATE_NON_COMBAT))
                 ai->TellPlayerNoFacing(GetMaster(), "Found a shortcut: old=" + std::to_string(uint32(oldDist)) + "y new=" + std::to_string(uint32(WorldPosition().getPathLength(movePath.getPointPath()))));
@@ -445,7 +606,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
         if (movePath.empty())
         {
 
-            AI_VALUE(LastMovement&, "last movement").setPath(movePath);
+            lastMove.setPath(movePath);
 
             if (ai->HasStrategy("debug move", BotState::BOT_STATE_NON_COMBAT))
                 ai->TellPlayerNoFacing(GetMaster(), "Too far from path. Rebuilding.");
@@ -692,65 +853,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
 
         if (pathType == TravelNodePathType::flightPath && entry)
         {
-            TaxiPathEntry const* tEntry = sTaxiPathStore.LookupEntry(entry);
-
-            if (tEntry)
-            {
-                Creature* unit = nullptr;
-
-                std::list<ObjectGuid> npcs = AI_VALUE(std::list<ObjectGuid>, "nearest npcs");
-                for (std::list<ObjectGuid>::iterator i = npcs.begin(); i != npcs.end(); i++)
-                {
-                    unit = bot->GetNPCIfCanInteractWith(*i, UNIT_NPC_FLAG_FLIGHTMASTER);
-                    if (unit)
-                        break;
-                }
-
-                if (!unit)
-                {
-                    return false;
-                }
-
-                if (unit && !bot->m_taxi.IsTaximaskNodeKnown(tEntry->from))
-                {
-                    bot->GetSession()->SendLearnNewTaxiNode(unit);
-
-                    unit->SetFacingTo(unit->GetAngle(bot));
-                }
-
-                uint32 botMoney = bot->GetMoney();
-                if (ai->HasCheat(BotCheatMask::gold) || ai->HasCheat(BotCheatMask::taxi))
-                {
-                    bot->SetMoney(botMoney + tEntry->price);
-                }                
-                bot->OnTaxiFlightEject(true);
-                ai->Unmount();
-                bool goTaxi = bot->ActivateTaxiPathTo({ tEntry->from, tEntry->to }, unit, 1);
-#ifdef MANGOSBOT_TWO
-                /*
-                bot->ResolvePendingMount();
-                */
-#endif
-                if(!goTaxi)
-                    bot->SetMoney(botMoney);
-
-                return goTaxi;
-            }
-            else
-            {
-#ifdef MANGOSBOT_TWO                
-                bot->OnTaxiFlightEject(true);
-                ai->Unmount();
-#endif
-                bool goClick = ai->HandleSpellClick(entry); //Source gryphon of ebonhold.
-#ifdef MANGOSBOT_TWO
-                /*
-                bot->ResolvePendingMount();
-                */
-#endif
-
-                return goClick;
-            }
+            return UseTaxi(ai, entry, true);
         }
 
         if (pathType == TravelNodePathType::teleportSpell && entry)
@@ -765,7 +868,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
                 else
                 {
                     movePath.clear();
-                    AI_VALUE(LastMovement&, "last movement").setPath(movePath);
+                    lastMove.setPath(movePath);
                     return false;
                 }
             }
@@ -788,7 +891,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
                 }
 
                 movePath.clear();
-                AI_VALUE(LastMovement&, "last movement").setPath(movePath);
+                lastMove.setPath(movePath);
                 return false;
             }
         }
@@ -803,13 +906,13 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
         return false;
 
     if(!movePath.empty() && movePath.getBack().distance(movePath.getFront()) > maxDist)
-        AI_VALUE(LastMovement&, "last movement").setPath(movePath);
+        lastMove.setPath(movePath);
 
     if (!movePosition || movePosition.getMapId() != bot->GetMapId())
     {        
         if(!bot->GetTransport() || movePath.getPath().size() == 1)
             movePath.clear();
-        AI_VALUE(LastMovement&, "last movement").setPath(movePath);
+        lastMove.setPath(movePath);
 
         if (ai->HasStrategy("debug move", BotState::BOT_STATE_NON_COMBAT))        
             ai->TellPlayerNoFacing(GetMaster(), "No point. Rebuilding.");
@@ -888,7 +991,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
 
     if (movePosition == WorldPosition()) {
         movePath.clear();
-        AI_VALUE(LastMovement&, "last movement").setPath(movePath);
+        lastMove.setPath(movePath);
 
         if (ai->HasStrategy("debug move", BotState::BOT_STATE_NON_COMBAT))
             ai->TellPlayerNoFacing(GetMaster(), "No point. Rebuilding.");
@@ -981,7 +1084,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
     {
         time_t now = time(0);
 
-        AI_VALUE(LastMovement&, "last movement").nextTeleport = now + (time_t)MoveDelay(startPosition.distance(movePosition));
+        lastMove.nextTeleport = now + (time_t)MoveDelay(startPosition.distance(movePosition));
 
         return bot->TeleportTo(movePosition.getMapId(), movePosition.getX(), movePosition.getY(), movePosition.getZ(), startPosition.getAngleTo(movePosition));
     }
@@ -1133,7 +1236,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
     }
 #endif
 
-    AI_VALUE(LastMovement&, "last movement").setShort(startPosition, movePosition);
+    lastMove.setShort(startPosition, movePosition);
 
     if (!idle)
         ClearIdleState();

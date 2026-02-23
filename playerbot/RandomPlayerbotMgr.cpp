@@ -25,6 +25,7 @@
 #include "Guilds/GuildMgr.h"
 #include "World/WorldState.h"
 #include "PlayerbotLoginMgr.h"
+#include "Entities/Transports.h"
 
 #ifndef MANGOSBOT_ZERO
 #ifdef CMANGOS
@@ -400,22 +401,21 @@ void RandomPlayerbotMgr::LogPlayerLocation()
 
             if (sPlayerbotAIConfig.randomBotAutologin)
             {
-                ForEachPlayerbot([&](Player* bot)
-                    {
-                        std::ostringstream out;
-                        out << sPlayerbotAIConfig.GetTimestampStr() << "+00,";
-                        out << "RND" << ",";
-                        out << bot->GetName() << ",";
-                        out << std::fixed << std::setprecision(2);
-                        WorldPosition(bot).printWKT(out);
-                        out << bot->GetOrientation() << ",";
-                        out << std::to_string(bot->getRace()) << ",";
-                        out << std::to_string(bot->getClass()) << ",";
-                        out << bot->GetMapId() << ",";
-                        out << bot->GetLevel() << ",";
-                        out << bot->GetHealth() << ",";
-                        out << bot->GetPowerPercent() << ",";
-                        out << bot->GetMoney() << ",";
+                ForEachPlayerbot([&](Player* bot) {
+                    std::ostringstream out;
+                    out << sPlayerbotAIConfig.GetTimestampStr() << "+00,";
+                    out << "RND" << ",";
+                    out << bot->GetName() << ",";
+                    out << std::fixed << std::setprecision(2);
+                    WorldPosition(bot).printWKT(out);
+                    out << bot->GetOrientation() << ",";
+                    out << std::to_string(bot->getRace()) << ",";
+                    out << std::to_string(bot->getClass()) << ",";
+                    out << bot->GetMapId() << ",";
+                    out << bot->GetLevel() << ",";
+                    out << bot->GetHealth() << ",";
+                    out << bot->GetPowerPercent() << ",";
+                    out << bot->GetMoney() << ",";
 
                         if (bot->GetPlayerbotAI())
                         {
@@ -510,7 +510,7 @@ void RandomPlayerbotMgr::LogPlayerLocation()
                 out << (bot->IsDead() ? (bot->GetCorpse() ? "ghost" : "dead") : "alive") << ",";
 
                 if (bot->GetGroup())
-                    WorldPosition(bot).printWKT({ bot, sObjectMgr.GetPlayer(bot->GetGroup()->GetLeaderGuid()) }, out, 1);
+                    WorldPosition(bot).printWKT({bot, sObjectMgr.GetPlayer(bot->GetGroup()->GetLeaderGuid())}, out, 1);
 
                 sPlayerbotAIConfig.log("player_location.csv", out.str().c_str());
 
@@ -543,8 +543,7 @@ void RandomPlayerbotMgr::LogPlayerLocation()
         activeBots = 0;
         if (sPlayerbotAIConfig.randomBotAutologin)
         {
-            ForEachPlayerbot([&](Player* bot)
-                {
+            ForEachPlayerbot([&](Player* bot) {
                     if (bot->GetPlayerbotAI() && bot->GetPlayerbotAI()->AllowActivity(ALL_ACTIVITY))
                     {
                         activeBots++;
@@ -560,6 +559,33 @@ void RandomPlayerbotMgr::LogPlayerLocation()
             if (bot->GetPlayerbotAI())
                 if (bot->GetPlayerbotAI()->AllowActivity(ALL_ACTIVITY))
                     activeBots++;
+        }
+    }
+
+    if (sPlayerbotAIConfig.hasLog("transport.csv"))
+    {
+        sPlayerbotAIConfig.openLog("transport.csv", "w");
+        for (auto& [mapId, map] : sMapMgr.Maps())
+        {         
+            for (auto& transport : WorldPosition(map->GetId(), 1, 1).getTransports())
+            {
+                std::ostringstream out;
+                out << sPlayerbotAIConfig.GetTimestampStr() << "+00,";
+                if (transport->GetName() == nullptr || transport->GetName()[0] == '\0')
+                {
+                    GameObjectInfo const* data = sGOStorage.LookupEntry<GameObjectInfo>(transport->GetEntry());
+                    out << data->name << ",";
+                }
+                else
+                    out << transport->GetName() << ",";
+
+                out << transport->GetEntry() << ",";
+                out << std::fixed << std::setprecision(2);
+                WorldPosition(transport).printWKT(out);
+                out << transport->GetOrientation();
+
+                sPlayerbotAIConfig.log("transport.csv", out.str().c_str());
+            }
         }
     }
 }

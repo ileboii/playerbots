@@ -795,12 +795,14 @@ void TravelNode::print(bool printFailed)
     }
 }
 
-bool TravelPath::cutTo(PathNodePoint point)
+bool TravelPath::cutTo(PathNodePoint point, bool including)
 {
     auto it = std::find(fullPath.begin(), fullPath.end(), point);
     if (it != fullPath.end())
     {
-        fullPath.erase(fullPath.begin(), std::next(it));
+        auto cutIt = including ? std::next(it) : it;
+
+        fullPath.erase(fullPath.begin(), cutIt);
         return true;
     }
     
@@ -969,6 +971,9 @@ WorldPosition TravelPath::getNextPoint(WorldPosition startPos, float maxDist, Tr
 
         float curDist = p->point.distance(startPos);
 
+        if (!p->isWalkable())
+            continue;
+
         if (curDist <= minDist || p == beg)
         {
             minDist = curDist;
@@ -1000,6 +1005,7 @@ WorldPosition TravelPath::getNextPoint(WorldPosition startPos, float maxDist, Tr
     {
         pathType = TravelNodePathType::areaTrigger;
         entry = startP->entry;
+        cutTo(*startP, false);
         return startP->point;
     }
 
@@ -1008,6 +1014,7 @@ WorldPosition TravelPath::getNextPoint(WorldPosition startPos, float maxDist, Tr
     {
         pathType = TravelNodePathType::staticPortal;
         entry = startP->entry;
+        cutTo(*startP, false);
         return startP->point;
     }
 
@@ -1016,6 +1023,7 @@ WorldPosition TravelPath::getNextPoint(WorldPosition startPos, float maxDist, Tr
     {
         pathType = TravelNodePathType::teleportSpell;
         entry = startP->entry;
+        cutTo(*startP, false);
         return startP->point;
     }
 
@@ -1024,6 +1032,7 @@ WorldPosition TravelPath::getNextPoint(WorldPosition startPos, float maxDist, Tr
     {
         pathType = TravelNodePathType::flightPath;
         entry = startP->entry;
+        cutTo(*startP, false);
         return startP->point;
     }
 
@@ -1036,6 +1045,7 @@ WorldPosition TravelPath::getNextPoint(WorldPosition startPos, float maxDist, Tr
         {
             if (p->type != PathNodeType::NODE_TRANSPORT)
             {
+                cutTo(*p, false);
                 return p->point;              //We want to move here.
             }
         }
@@ -1050,6 +1060,7 @@ WorldPosition TravelPath::getNextPoint(WorldPosition startPos, float maxDist, Tr
         {
             if (p->type != PathNodeType::NODE_TRANSPORT)
             {
+                cutTo(*p, false);
                 return p->point;              //We want to move here.
             }
         }
@@ -1076,6 +1087,7 @@ WorldPosition TravelPath::getNextPoint(WorldPosition startPos, float maxDist, Tr
             if (p->type != PathNodeType::NODE_TRANSPORT)
             {
                 telePosition = prevP->point;  //Boat needs to be here
+                cutTo(*p, false);
                 return p->point;              //We want to move here.
             }
             prevP = p;
@@ -1088,6 +1100,7 @@ WorldPosition TravelPath::getNextPoint(WorldPosition startPos, float maxDist, Tr
         pathType = TravelNodePathType::transport;
         entry = nextP->entry;
         telePosition = nextP->point; //Boat needs to be here.
+        cutTo(*startP, false);
         return startP->point;        //We want to stand somewhere here.
     } 
 
@@ -1099,6 +1112,7 @@ WorldPosition TravelPath::getNextPoint(WorldPosition startPos, float maxDist, Tr
         return WorldPosition();
     }
 
+    cutTo(*startP, false);
     return startP->point;
 }
 
@@ -1182,13 +1196,15 @@ TravelPath TravelNodeRoute::buildPath(std::vector<WorldPosition> pathToStart, st
             }
             else if (nodePath->getPathType() == TravelNodePathType::transport) //Move onto transport
             {
-                travelPath.addPoint(*prevNode->getPosition(), PathNodeType::NODE_TRANSPORT, nodePath->getPathObject()); //Departure point
-                travelPath.addPoint(*node->getPosition(), PathNodeType::NODE_TRANSPORT, nodePath->getPathObject());     //Arrival point        
+                travelPath.addPath(nodePath->getPath(), PathNodeType::NODE_TRANSPORT, nodePath->getPathObject());
+                //travelPath.addPoint(*prevNode->getPosition(), PathNodeType::NODE_TRANSPORT, nodePath->getPathObject()); //Departure point
+                //travelPath.addPoint(*node->getPosition(), PathNodeType::NODE_TRANSPORT, nodePath->getPathObject());     //Arrival point        
             }
             else if (nodePath->getPathType() == TravelNodePathType::flightPath) //Use the flightpath
             {
-                travelPath.addPoint(*prevNode->getPosition(), PathNodeType::NODE_FLIGHTPATH, nodePath->getPathObject()); //Departure point
-                travelPath.addPoint(*node->getPosition(), PathNodeType::NODE_FLIGHTPATH, nodePath->getPathObject());     //Arrival point        
+                travelPath.addPath(nodePath->getPath(), PathNodeType::NODE_FLIGHTPATH, nodePath->getPathObject());
+                //travelPath.addPoint(*prevNode->getPosition(), PathNodeType::NODE_FLIGHTPATH, nodePath->getPathObject()); //Departure point
+                //travelPath.addPoint(*node->getPosition(), PathNodeType::NODE_FLIGHTPATH, nodePath->getPathObject());     //Arrival point        
             }
             else if (nodePath->getPathType() == TravelNodePathType::teleportSpell)
             {
@@ -2303,7 +2319,7 @@ void TravelNodeMap::generateTransportNodes()
                                     float totalTime = (p.second->TimeSeg - timeStart) / 1000.0f;
 
                                     TravelNodePath travelPath(0.1f, totalTime, (uint8)TravelNodePathType::transport, entry, true);
-                                    node->setPathTo(prevNode, travelPath);
+                                    prevNode->setPathTo(node, travelPath);
                                     ppath.clear();
                                     ppath.push_back(pos);
                                     timeStart = p.second->TimeSeg;
@@ -2353,7 +2369,7 @@ void TravelNodeMap::generateTransportNodes()
 
                                         TravelNodePath travelPath(0.1f, totalTime, (uint8)TravelNodePathType::transport, entry, true);
                                         travelPath.setPath(ppath);
-                                        node->setPathTo(prevNode, travelPath);
+                                        prevNode->setPathTo(node, travelPath);
                                         ppath.clear();
                                         ppath.push_back(pos);
                                         timeStart = p.second->TimeSeg;
@@ -2403,7 +2419,7 @@ void TravelNodeMap::generateTransportNodes()
                         {
                             TravelNodePath travelPath(0.1f, 0.0, (uint8)TravelNodePathType::transport, entry, true);
                             travelPath.setPathAndCost(ppath, moveSpeed);
-                            node->setPathTo(prevNode, travelPath);
+                            prevNode->setPathTo(node, travelPath);
                             ppath.clear();
                             ppath.push_back(pos);
                         }
@@ -2434,7 +2450,7 @@ void TravelNodeMap::generateTransportNodes()
                                 TravelNodePath travelPath(0.1f, 0.0, (uint8)TravelNodePathType::transport, entry, true);
                                 travelPath.setPathAndCost(ppath, moveSpeed);
 
-                                node->setPathTo(prevNode, travelPath);
+                                prevNode->setPathTo(node, travelPath);
                             }
                         }
                     }
@@ -3358,6 +3374,30 @@ void TravelNodeMap::loadNodeStore()
         {
             sLog.outString();
             sLog.outErrorDb(">> Error loading travelNode paths.");
+        }
+
+        //Hotfix inverses transport paths. No longer needed if using db data after (todo date when refreshing next nodes)
+
+        for (auto& node : getNodes())
+        {
+            for (auto& [endNode, path] : *node->getPaths())
+            {
+                if (path.getPathType() != TravelNodePathType::transport)
+                    continue;
+
+                if (path.getPath().empty())
+                    continue;
+
+                if (path.getPath().front() == *node->getPosition() || path.getPath().back() == *endNode->getPosition())
+                    continue;
+
+                if (path.getPath().front() != *endNode->getPosition() || path.getPath().back() != *node->getPosition())
+                    continue;
+                
+                auto newPath = path.getPath();
+                std::reverse(newPath.begin(), newPath.end());
+                path.setPath(newPath);
+            }
         }
     }
 }

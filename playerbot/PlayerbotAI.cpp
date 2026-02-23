@@ -1927,62 +1927,6 @@ void PlayerbotAI::ChangeEngine(BotState type)
     }
 }
 
-inline bool DoMinimalMove(PlayerbotAI* ai)
-{
-    if(!sPlayerbotAIConfig.enableMinimalMove)
-        return false;
-
-    auto pmo1 = sPerformanceMonitor.start(PERF_MON_ACTION, "minimalMove", ai);
-
-    AiObjectContext* context = ai->GetAiObjectContext();
-    Player* bot = ai->GetBot();
-    LastMovement& lastMove = AI_VALUE(LastMovement&, "last movement");
-
-    if (lastMove.lastPath.empty())
-        return false;
-
-    time_t now = time(0);
-
-    if (lastMove.nextTeleport > now)
-        return false;
-
-    PathNodePoint nextStep = lastMove.lastPath.getPath().front();
-    bool doDelay = true;
-
-    if (!nextStep.isWalkable())
-    {
-        for (auto& step : lastMove.lastPath.getPath())
-        {
-            if (!step.isWalkable())
-                continue;
-
-            nextStep = step;
-            doDelay = true;
-            break;
-        }
-    }
-
-    if (!nextStep.isWalkable())
-        return false;
-
-    if (ai->HasPlayerNearby(nextStep.point, sWorld.getConfig(CONFIG_FLOAT_LISTEN_RANGE_YELL)))
-        return false;
-
-    uint32 time = 1;
-
-    if (doDelay)
-    {
-        time = nextStep.point.distance(bot) / bot->GetSpeedInMotion();
-    }
-
-    lastMove.nextTeleport = now + time; 
-
-    lastMove.lastPath.cutTo(nextStep);
-
-    bot->TeleportTo(nextStep.point);
-
-    return true;
-}
 
 void PlayerbotAI::DoNextAction(bool min)
 {
@@ -2012,9 +1956,7 @@ void PlayerbotAI::DoNextAction(bool min)
 
     if (minimal)
     {
-
-
-        if (!DoMinimalMove(this) && !bot->isAFK() && !bot->InBattleGround() && !HasRealPlayerMaster())
+        if (!MovementAction::MinimalMove(this) && !bot->isAFK() && !bot->InBattleGround() && !HasRealPlayerMaster())
             bot->ToggleAFK();
 
         SetAIInternalUpdateDelay(sPlayerbotAIConfig.passiveDelay);
@@ -5889,7 +5831,17 @@ ActivePiorityType PlayerbotAI::GetPriorityType()
         return ActivePiorityType::IN_BATTLEGROUND;
 
     if (!WorldPosition(bot).isOverworld())
-        return ActivePiorityType::IN_INSTANCE;
+    {
+        if (!sPlayerbotAIConfig.enableMinimalMove)
+            return ActivePiorityType::IN_INSTANCE;
+        else
+        {
+            AiObjectContext* context = GetAiObjectContext();
+            LastMovement& lastMove = AI_VALUE(LastMovement&, "last movement");
+            if (lastMove.lastPath.empty())
+                return ActivePiorityType::IN_INSTANCE;
+        }
+    }
 
     if (HasPlayerNearby())
         return ActivePiorityType::VISIBLE_FOR_PLAYER;
@@ -5924,6 +5876,14 @@ ActivePiorityType PlayerbotAI::GetPriorityType()
     if (isLFG)
         return ActivePiorityType::IN_LFG;
 
+    if (sPlayerbotAIConfig.enableMinimalMove)
+    {
+        AiObjectContext* context = GetAiObjectContext();
+        LastMovement& lastMove = AI_VALUE(LastMovement&, "last movement");
+        if (lastMove.lastPath.empty() && !urand(0, 5))
+            return ActivePiorityType::NO_PATH;
+    }
+
     //If has real players - slow down continents without player
     //This means we first disable bots in a different continent/area.
     if (sRandomPlayerbotMgr.GetPlayers().empty())
@@ -5943,14 +5903,6 @@ ActivePiorityType PlayerbotAI::GetPriorityType()
     // real guild always active if member+
     if (IsInRealGuild())
         return ActivePiorityType::PLAYER_GUILD;
-
-    if (sPlayerbotAIConfig.enableMinimalMove)
-    {
-        AiObjectContext* context = GetAiObjectContext();
-        LastMovement& lastMove = AI_VALUE(LastMovement&, "last movement");
-        if (lastMove.lastPath.empty() && !urand(0, 5))
-            return ActivePiorityType::NO_PATH;
-    }
 
     if (bot->IsBeingTeleported() || !bot->IsInWorld() || !bot->GetMap()->HasRealPlayers())
         return ActivePiorityType::IN_INACTIVE_MAP;
@@ -5988,10 +5940,10 @@ std::pair<uint32, uint32> PlayerbotAI::GetPriorityBracket(ActivePiorityType type
     case ActivePiorityType::PLAYER_GUILD:
         return { 0,50 };
     case ActivePiorityType::NO_PATH:
-        return { 50, 100};
+        return { 50, 99};
     case ActivePiorityType::IN_ACTIVE_AREA:
     case ActivePiorityType::IN_EMPTY_SERVER:
-        return { 50,100 };
+        return { 50,100 }; //Note lower 100 means multiply by activity percentage.
     case ActivePiorityType::IN_ACTIVE_MAP:
         return { 70,100 };
     case ActivePiorityType::IN_INACTIVE_MAP:
