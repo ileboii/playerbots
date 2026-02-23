@@ -340,7 +340,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
     if (totalDistance < minDist)
     {
         if (lastMove.lastMoveShort.distance(endPosition) < maxDistChange)
-            AI_VALUE(LastMovement&, "last movement").clear();
+            lastMove.clear();
         if (mover == bot)
             ai->StopMoving();
         else
@@ -376,7 +376,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
                     {
                         movePath.clear();
                         movePath.addPoint(endPosition);
-                        AI_VALUE(LastMovement&, "last movement").setPath(movePath);
+                        lastMove.setPath(movePath);
 
                         if (mover == bot)
                             ai->StopMoving();
@@ -445,7 +445,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
         if (movePath.empty())
         {
 
-            AI_VALUE(LastMovement&, "last movement").setPath(movePath);
+            lastMove.setPath(movePath);
 
             if (ai->HasStrategy("debug move", BotState::BOT_STATE_NON_COMBAT))
                 ai->TellPlayerNoFacing(GetMaster(), "Too far from path. Rebuilding.");
@@ -765,7 +765,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
                 else
                 {
                     movePath.clear();
-                    AI_VALUE(LastMovement&, "last movement").setPath(movePath);
+                    lastMove.setPath(movePath);
                     return false;
                 }
             }
@@ -788,7 +788,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
                 }
 
                 movePath.clear();
-                AI_VALUE(LastMovement&, "last movement").setPath(movePath);
+                lastMove.setPath(movePath);
                 return false;
             }
         }
@@ -803,13 +803,13 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
         return false;
 
     if(!movePath.empty() && movePath.getBack().distance(movePath.getFront()) > maxDist)
-        AI_VALUE(LastMovement&, "last movement").setPath(movePath);
+        lastMove.setPath(movePath);
 
     if (!movePosition || movePosition.getMapId() != bot->GetMapId())
     {        
         if(!bot->GetTransport() || movePath.getPath().size() == 1)
             movePath.clear();
-        AI_VALUE(LastMovement&, "last movement").setPath(movePath);
+        lastMove.setPath(movePath);
 
         if (ai->HasStrategy("debug move", BotState::BOT_STATE_NON_COMBAT))        
             ai->TellPlayerNoFacing(GetMaster(), "No point. Rebuilding.");
@@ -888,7 +888,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
 
     if (movePosition == WorldPosition()) {
         movePath.clear();
-        AI_VALUE(LastMovement&, "last movement").setPath(movePath);
+        lastMove.setPath(movePath);
 
         if (ai->HasStrategy("debug move", BotState::BOT_STATE_NON_COMBAT))
             ai->TellPlayerNoFacing(GetMaster(), "No point. Rebuilding.");
@@ -981,7 +981,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
     {
         time_t now = time(0);
 
-        AI_VALUE(LastMovement&, "last movement").nextTeleport = now + (time_t)MoveDelay(startPosition.distance(movePosition));
+        lastMove.nextTeleport = now + (time_t)MoveDelay(startPosition.distance(movePosition));
 
         return bot->TeleportTo(movePosition.getMapId(), movePosition.getX(), movePosition.getY(), movePosition.getZ(), startPosition.getAngleTo(movePosition));
     }
@@ -1133,7 +1133,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
     }
 #endif
 
-    AI_VALUE(LastMovement&, "last movement").setShort(startPosition, movePosition);
+    lastMove.setShort(startPosition, movePosition);
 
     if (!idle)
         ClearIdleState();
